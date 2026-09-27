@@ -46,6 +46,7 @@ O objetivo é dar, em poucos segundos, uma leitura visual e intuitiva do estado 
 - 🪟 **Modal detalhado por localização**, com a lista de problemas ativos em cada host
 - 📰 **Ticker contínuo** no rodapé com o histórico de eventos e status operacional
 - 🔄 **Atualização automática** via polling configurável
+- 📱 **Automação de Notificações:** Envio de alertas críticos e resoluções em tempo real diretamente para o WhatsApp (via bot Loki)
 - 🌐 **Totalmente client-side no frontend** — HTML, CSS e JS puros, sem necessidade de build
 ---
  
@@ -56,16 +57,18 @@ O objetivo é dar, em poucos segundos, uma leitura visual e intuitiva do estado 
 │   Zabbix    │ ◄─────────────────  │   Backend    │
 │   Server    │                     │   (Python)   │
 └─────────────┘                     └──────┬───────┘
-                                           │ expõe API REST (JSON)
-                                           ▼
+                                            │ expõe API REST (JSON)
+                                            ▼
                                    ┌──────────────────┐
-                                   │ Frontend (SPA)   │
-                                   │ D3.js + Topojson │
+                                   │  Frontend (SPA)   │
+                                   │  D3.js + Topojson │
                                    └──────────────────┘
-                                           │
-                                           ▼
-                                    Navegador do usuário
+                                            │
+                                            ▼
+                                     Navegador do usuário
 ```
+ 
+Além de servir o frontend, o backend orquestra o disparo de notificações de incidentes para dispositivos móveis via integração com o WhatsApp.
  
 O **backend em Python** consulta a API do Zabbix, agrega as informações por localização/host e expõe um endpoint JSON simples, consumido periodicamente pelo frontend (`js/app.js`) via `fetch`.
  
