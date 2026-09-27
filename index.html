@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NOC Horizon</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div id="header">
+  <div class="header-left">
+    <h1><span class="brand-noc">NOC</span> <span class="brand-light">HORIZON</span></h1>
+    <div class="sub">Central de Operações · monitoramento global em tempo real</div>
+  </div>
+  <div id="live-clock"></div>
+</div>
+<div id="ops-card">
+  <div class="ops-stats">
+    <div class="stat-pill" id="pill-locations">
+      <span class="stat-num" id="stat-locations-num">0</span>
+      <span class="stat-label">Locais</span>
+    </div>
+    <div class="stat-pill" id="pill-hosts">
+      <span class="stat-num" id="stat-hosts-num">0</span>
+      <span class="stat-label">Hosts</span>
+    </div>
+    <div class="stat-pill" id="pill-problems">
+      <span class="stat-num" id="stat-problems-num">0</span>
+      <span class="stat-label">Alertas</span>
+    </div>
+  </div>
+  <div class="ops-divider"></div>
+  <div class="panel-title">Detalhes da Operação</div>
+  <div class="panel-row">
+    <span class="panel-label">Saúde geral</span>
+    <span class="panel-value" id="panel-health">—</span>
+  </div>
+  <div class="panel-row">
+    <span class="panel-label">Triggers ativos</span>
+    <span class="panel-value" id="panel-triggers">—</span>
+  </div>
+  <div class="panel-row">
+    <span class="panel-label">Hosts com problema</span>
+    <span class="panel-value" id="panel-hosts-problem">—</span>
+  </div>
+  <div class="panel-row">
+    <span class="panel-label">Dado mais antigo</span>
+    <span class="panel-value" id="panel-last-check">—</span>
+  </div>
+  <div class="panel-row">
+    <span class="panel-label">Latência API</span>
+    <span class="panel-value" id="panel-latency">—</span>
+  </div>
+  <div id="last-update"></div>
+</div>
+<svg id="map"></svg>
+<div id="signature">
+  <span class="live-dot"></span>
+  <a href="https://github.com/Sheila724" target="_blank" rel="noopener">Desenvolvido por Sheila Alves</a>
+  <span class="sig-sep">·</span>
+  <a href="https://www.linkedin.com/in/sheila-alvesaraujo" target="_blank" rel="noopener">LinkedIn</a>
+</div>
+<div id="legend">
+  <div class="item"><span class="dot" style="background:var(--ok)"></span>Saudável</div>
+  <div class="item"><span class="dot" style="background:var(--warning)"></span>Atenção</div>
+  <div class="item"><span class="dot" style="background:var(--attention)"></span>Alerta</div>
+  <div class="item"><span class="dot" style="background:var(--critical)"></span>Crítico</div>
+</div>
+<div id="ticker">
+  <div id="ticker-track"></div>
+</div>
+<div id="modal-backdrop">
+  <div id="modal">
+    <h2 id="modal-title"></h2>
+    <span id="modal-badge" class="status-badge"></span>
+    <div class="problem-list" id="modal-problems"></div>
+    <div class="close"><button id="modal-close-btn">Fechar</button></div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/map.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
