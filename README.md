@@ -59,8 +59,8 @@ O objetivo é dar, em poucos segundos, uma leitura visual e intuitiva do estado 
                                            │ expõe API REST (JSON)
                                            ▼
                                    ┌──────────────────┐
-                                   │  Frontend (SPA)   │
-                                   │  D3.js + Topojson │
+                                   │ Frontend (SPA)   │
+                                   │ D3.js + Topojson │
                                    └──────────────────┘
                                            │
                                            ▼
