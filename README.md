@@ -46,7 +46,7 @@ O objetivo é dar, em poucos segundos, uma leitura visual e intuitiva do estado 
 - 🪟 **Modal detalhado por localização**, com a lista de problemas ativos em cada host
 - 📰 **Ticker contínuo** no rodapé com o histórico de eventos e status operacional
 - 🔄 **Atualização automática** via polling configurável
-- 📱 **Automação de Notificações:** Envio de alertas críticos e resoluções em tempo real diretamente para o WhatsApp (via bot Loki)
+- 📱 **Automação de Notificações:** Envio de alertas críticos e resoluções em tempo real diretamente para o WhatsApp
 - 🌐 **Totalmente client-side no frontend** — HTML, CSS e JS puros, sem necessidade de build
 ---
  
