@@ -56,15 +56,15 @@ O objetivo é dar, em poucos segundos, uma leitura visual e intuitiva do estado 
 │   Zabbix    │ ◄─────────────────  │   Backend    │
 │   Server    │                     │   (Python)   │
 └─────────────┘                     └──────┬───────┘
-                                            │ expõe API REST (JSON)
-                                            ▼
+                                           │ expõe API REST (JSON)
+                                           ▼
                                    ┌──────────────────┐
                                    │  Frontend (SPA)   │
                                    │  D3.js + Topojson │
                                    └──────────────────┘
-                                            │
-                                            ▼
-                                     Navegador do usuário
+                                           │
+                                           ▼
+                                    Navegador do usuário
 ```
  
 O **backend em Python** consulta a API do Zabbix, agrega as informações por localização/host e expõe um endpoint JSON simples, consumido periodicamente pelo frontend (`js/app.js`) via `fetch`.
