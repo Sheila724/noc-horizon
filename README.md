@@ -57,15 +57,15 @@ O objetivo é dar, em poucos segundos, uma leitura visual e intuitiva do estado 
 │   Zabbix    │ ◄─────────────────  │   Backend    │
 │   Server    │                     │   (Python)   │
 └─────────────┘                     └──────┬───────┘
-                                            │ expõe API REST (JSON)
-                                            ▼
+                                           │ expõe API REST (JSON)
+                                           ▼
                                    ┌──────────────────┐
-                                   │  Frontend (SPA)   │
-                                   │  D3.js + Topojson │
+                                   │ Frontend (SPA)   │
+                                   │ D3.js + Topojson │
                                    └──────────────────┘
-                                            │
-                                            ▼
-                                     Navegador do usuário
+                                           │
+                                           ▼
+                                    Navegador do usuário
 ```
  
 Além de servir o frontend, o backend orquestra o disparo de notificações de incidentes para dispositivos móveis via integração com o WhatsApp.
