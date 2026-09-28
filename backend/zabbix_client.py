@@ -4,8 +4,10 @@ Não sabe nada sobre localizações ou mapa — só fala com o Zabbix.
 """
 
 import time
+
 import requests
-from config import ZABBIX_URL, ZABBIX_API_TOKEN
+
+from config import ZABBIX_API_TOKEN, ZABBIX_URL
 
 
 def _call(method: str, params: dict, authenticated: bool = True) -> dict:
@@ -33,32 +35,40 @@ def get_active_problems() -> list[dict]:
     O "objectid" do problema é o ID do trigger que o gerou, então
     buscamos os hosts separadamente via trigger.get.
     """
-    problems = _call("problem.get", {
-        "output": ["objectid", "name", "severity", "acknowledged", "suppressed"],
-        "recent": False,
-    })
+    problems = _call(
+        "problem.get",
+        {
+            "output": ["objectid", "name", "severity", "acknowledged", "suppressed"],
+            "recent": False,
+        },
+    )
 
     trigger_ids = list({p["objectid"] for p in problems if p.get("objectid")})
     host_by_trigger = {}
     if trigger_ids:
-        triggers = _call("trigger.get", {
-            "output": ["triggerid"],
-            "triggerids": trigger_ids,
-            "selectHosts": ["host"],
-        })
+        triggers = _call(
+            "trigger.get",
+            {
+                "output": ["triggerid"],
+                "triggerids": trigger_ids,
+                "selectHosts": ["host"],
+            },
+        )
         for t in triggers:
             hosts = t.get("hosts", [])
             host_by_trigger[t["triggerid"]] = hosts[0]["host"] if hosts else None
 
     result = []
     for p in problems:
-        result.append({
-            "host": host_by_trigger.get(p.get("objectid")),
-            "name": p.get("name"),
-            "severity": int(p.get("severity", 0)),
-            "acknowledged": p.get("acknowledged") == "1",
-            "suppressed": p.get("suppressed") == "1",
-        })
+        result.append(
+            {
+                "host": host_by_trigger.get(p.get("objectid")),
+                "name": p.get("name"),
+                "severity": int(p.get("severity", 0)),
+                "acknowledged": p.get("acknowledged") == "1",
+                "suppressed": p.get("suppressed") == "1",
+            }
+        )
     return result
 
 
@@ -74,11 +84,14 @@ def get_hosts_last_data() -> dict:
     Retorna, por host, o timestamp (lastclock) do dado mais recente
     coletado pelo Zabbix. Usado pra calcular o "frescor" dos dados.
     """
-    items = _call("item.get", {
-        "output": ["hostid", "lastclock"],
-        "selectHosts": ["host"],
-        "monitored": True,
-    })
+    items = _call(
+        "item.get",
+        {
+            "output": ["hostid", "lastclock"],
+            "selectHosts": ["host"],
+            "monitored": True,
+        },
+    )
 
     last_by_host = {}
     for item in items:

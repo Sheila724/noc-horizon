@@ -2,10 +2,14 @@
 
 **Central de Operações com monitoramento global em tempo real**, construída para visualizar de forma clara e imediata a saúde de uma infraestrutura distribuída — hosts, alertas e latência — direto sobre um globo interativo.
 
+[![CI](https://github.com/Sheila724/noc-horizon/actions/workflows/ci.yml/badge.svg)](https://github.com/Sheila724/noc-horizon/actions/workflows/ci.yml)
 ![Status](https://img.shields.io/badge/status-em%20produção-22d67a?style=flat-square)
 ![Backend](https://img.shields.io/badge/backend-Python%20%2B%20Flask-3776AB?style=flat-square&logo=python&logoColor=white)
 ![Dados](https://img.shields.io/badge/dados-Zabbix%20API-ff9a3d?style=flat-square)
 ![Frontend](https://img.shields.io/badge/frontend-D3.js-f0c93d?style=flat-square)
+![Testes](https://img.shields.io/badge/testes-pytest-0a9edc?style=flat-square&logo=pytest&logoColor=white)
+![Lint](https://img.shields.io/badge/lint-ruff-d7ff64?style=flat-square&logo=ruff&logoColor=black)
+![Segredos](https://img.shields.io/badge/segredos-gitleaks-ff3b5c?style=flat-square)
 ![Licença](https://img.shields.io/badge/license-MIT-7d8bab?style=flat-square)
 
 ---
@@ -92,6 +96,10 @@ O **backend em Python** consulta a API do Zabbix, agrega os problemas por locali
 
 ```
 noc-horizon/
+├── .github/
+│   ├── workflows/ci.yml    # CI: lint, testes, pip-audit, bandit, gitleaks
+│   └── dependabot.yml      # Atualização semanal de dependências
+├── .pre-commit-config.yaml # Hooks locais (gitleaks, ruff)
 ├── index.html              # Estrutura da página (header, cards, globo, ticker, modal)
 ├── favicon.svg
 ├── css/
@@ -111,6 +119,7 @@ noc-horizon/
     ├── requirements.txt
     ├── requirements-dev.txt
     ├── pytest.ini
+    ├── ruff.toml           # Regras de lint/formatação
     ├── tests/              # Testes da agregação (pytest)
     └── .env.example        # Modelo das variáveis de ambiente (sem segredos)
 ```
@@ -173,6 +182,13 @@ pytest
 ```
 
 Os testes cobrem a lógica de status e do resumo: cálculo de saúde por host, problemas fora do mapa, estado "sem dados", reconhecidos e manutenção.
+
+Para desenvolver, instale os hooks locais uma vez — eles rodam **gitleaks** (bloqueia commit com token/senha) e **ruff** a cada commit:
+
+```bash
+pip install pre-commit
+pre-commit install
+```
 
 ### 6. Produção
 
@@ -240,6 +256,21 @@ Recomenda-se publicar o painel com **HTTPS** (Let's Encrypt ou certificado de or
 
 ---
 
+## 🔄 Integração Contínua
+
+Cada push e pull request roda no GitHub Actions:
+
+| Job | O que verifica |
+|---|---|
+| Backend | `ruff` (lint + formatação) e `pytest` |
+| Frontend | Sintaxe dos arquivos JS e ausência de `innerHTML` (XSS) |
+| Segurança | `pip-audit` (dependências com CVE) e `bandit` (análise estática) |
+| Segredos | `gitleaks` (tokens e senhas commitados) |
+
+O **Dependabot** abre PRs semanais com atualizações de dependências Python e das actions.
+
+---
+
 ## 🔒 Segurança
 
 - Segredos (URL e token do Zabbix) ficam **apenas em variáveis de ambiente**; `.env` está no `.gitignore`.
@@ -247,6 +278,7 @@ Recomenda-se publicar o painel com **HTTPS** (Let's Encrypt ou certificado de or
 - O backend escuta só em `127.0.0.1`, roda com usuário sem privilégios e não devolve detalhes de erro ao navegador.
 - Dados vindos do Zabbix são inseridos no DOM com `textContent` (sem `innerHTML`), evitando XSS.
 - Frontend sem dependências externas, protegido por Content Security Policy.
+- Segredos barrados antes do commit (pre-commit + gitleaks) e verificados de novo no CI.
 - ⚠️ O painel ainda **não possui autenticação**: qualquer pessoa com a URL vê nomes de hosts e problemas ativos. Veja o roadmap.
 
 ---

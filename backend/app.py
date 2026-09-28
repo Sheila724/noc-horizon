@@ -3,8 +3,11 @@
 Servidor do proxy Zabbix -> Mapa.
 Roda via gunicorn (ver README). Não chame app.run() em produção.
 """
+
 import time
+
 from flask import Flask, jsonify
+
 from aggregator import build_snapshot
 
 app = Flask(__name__)

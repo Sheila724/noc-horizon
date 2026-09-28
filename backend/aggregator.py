@@ -6,6 +6,7 @@ decide o status de cada um e monta o resumo (summary) do NOC Horizon.
   brutos e devolve o snapshot. É o que os testes exercitam.
 - `build_snapshot()` busca os dados no Zabbix e chama `aggregate()`.
 """
+
 import logging
 import time
 
@@ -83,26 +84,30 @@ def aggregate(problems, last_data, host_map, locations, now, stale_after, latenc
             all_hosts.append(host_entry)
 
             for p in host_problems:
-                loc_problems.append({
-                    "host": host,
-                    "trigger": p["name"],
-                    "severity": p["severity"],
-                    "acknowledged": bool(p.get("acknowledged")),
-                    "suppressed": bool(p.get("suppressed")),
-                })
+                loc_problems.append(
+                    {
+                        "host": host,
+                        "trigger": p["name"],
+                        "severity": p["severity"],
+                        "acknowledged": bool(p.get("acknowledged")),
+                        "suppressed": bool(p.get("suppressed")),
+                    }
+                )
 
         loc_problems.sort(key=lambda p: (p["suppressed"], -p["severity"]))
         loc_status = worst(*(h["status"] for h in hosts_out)) if hosts_out else "unknown"
 
-        locations_out.append({
-            "id": loc_key,
-            "label": info["label"],
-            "lat": info["lat"],
-            "lon": info["lon"],
-            "status": loc_status,
-            "hosts": hosts_out,
-            "problems": loc_problems,
-        })
+        locations_out.append(
+            {
+                "id": loc_key,
+                "label": info["label"],
+                "lat": info["lat"],
+                "lon": info["lon"],
+                "status": loc_status,
+                "hosts": hosts_out,
+                "problems": loc_problems,
+            }
+        )
 
     mapped_problems = [p for ps in probs_by_host.values() for p in ps]
     active_problems = [p for p in mapped_problems if not p.get("suppressed")]
@@ -112,7 +117,7 @@ def aggregate(problems, last_data, host_map, locations, now, stale_after, latenc
 
     summary = {
         "locations_count": len(locations_out),
-        "locations_with_problems": sum(1 for l in locations_out if l["status"] != "ok"),
+        "locations_with_problems": sum(1 for loc in locations_out if loc["status"] != "ok"),
         "hosts_count": hosts_total,
         "hosts_healthy": hosts_healthy,
         "hosts_unhealthy": hosts_total - hosts_healthy,
@@ -132,8 +137,8 @@ def aggregate(problems, last_data, host_map, locations, now, stale_after, latenc
 
 def build_snapshot():
     """Busca os dados no Zabbix e devolve o snapshot agregado."""
-    from config import HOST_LOCATION_MAP, LOCATIONS, STALE_AFTER_SECONDS
     import zabbix_client as zc
+    from config import HOST_LOCATION_MAP, LOCATIONS, STALE_AFTER_SECONDS
 
     problems = zc.get_active_problems()  # se falhar, a API devolve erro (sem dados parciais)
 

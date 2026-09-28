@@ -1,4 +1,5 @@
 """Testes da lógica de agregação (sem rede, sem Zabbix)."""
+
 import pytest
 
 from aggregator import aggregate, severity_to_status, worst
@@ -15,8 +16,13 @@ FRESH = {h: NOW - 30 for h in HOST_MAP}
 
 
 def prob(host, severity=4, name="Problema", ack=False, suppressed=False):
-    return {"host": host, "name": name, "severity": severity,
-            "acknowledged": ack, "suppressed": suppressed}
+    return {
+        "host": host,
+        "name": name,
+        "severity": severity,
+        "acknowledged": ack,
+        "suppressed": suppressed,
+    }
 
 
 def run(problems=(), last_data=FRESH, host_map=HOST_MAP, locations=LOCATIONS):
@@ -24,15 +30,23 @@ def run(problems=(), last_data=FRESH, host_map=HOST_MAP, locations=LOCATIONS):
 
 
 def loc(snapshot, key):
-    return next(l for l in snapshot["locations"] if l["id"] == key)
+    return next(item for item in snapshot["locations"] if item["id"] == key)
 
 
 # --- helpers -----------------------------------------------------------------
 
-@pytest.mark.parametrize("sev,expected", [
-    (0, "warning"), (1, "warning"), (2, "warning"),
-    (3, "attention"), (4, "critical"), (5, "critical"),
-])
+
+@pytest.mark.parametrize(
+    "sev,expected",
+    [
+        (0, "warning"),
+        (1, "warning"),
+        (2, "warning"),
+        (3, "attention"),
+        (4, "critical"),
+        (5, "critical"),
+    ],
+)
 def test_severity_to_status(sev, expected):
     assert severity_to_status(sev) == expected
 
@@ -46,12 +60,13 @@ def test_worst_respeita_ordem_de_gravidade():
 
 # --- saúde geral --------------------------------------------------------------
 
+
 def test_tudo_ok():
     s = run()["summary"]
     assert s["health_pct"] == 100.0
     assert s["hosts_unhealthy"] == 0
     assert s["active_problems"] == 0
-    assert all(l["status"] == "ok" for l in run()["locations"])
+    assert all(item["status"] == "ok" for item in run()["locations"])
 
 
 def test_saude_conta_hosts_e_nao_problemas():
@@ -71,6 +86,7 @@ def test_problemas_de_hosts_fora_do_mapa_nao_entram_no_total():
 
 
 # --- estado "sem dados" (unknown) --------------------------------------------
+
 
 def test_host_sem_dados_recentes_fica_unknown():
     last = {**FRESH, "db1": NOW - (STALE + 1)}
@@ -111,6 +127,7 @@ def test_idade_do_dado_mais_antigo():
 
 # --- reconhecidos e manutenção -----------------------------------------------
 
+
 def test_problema_em_manutencao_nao_colore_o_local():
     snap = run([prob("web1", severity=5, suppressed=True)])
     assert loc(snap, "sp")["status"] == "ok"
@@ -129,17 +146,20 @@ def test_problema_reconhecido_continua_contando():
 
 # --- status do local e ordenação ---------------------------------------------
 
+
 def test_local_assume_o_pior_status_dos_hosts():
     snap = run([prob("web1", severity=2), prob("web2", severity=3)])
     assert loc(snap, "sp")["status"] == "attention"
 
 
 def test_problemas_ordenados_por_gravidade_e_manutencao_por_ultimo():
-    snap = run([
-        prob("web1", severity=2, name="baixo"),
-        prob("web1", severity=5, name="manut", suppressed=True),
-        prob("web2", severity=4, name="alto"),
-    ])
+    snap = run(
+        [
+            prob("web1", severity=2, name="baixo"),
+            prob("web1", severity=5, name="manut", suppressed=True),
+            prob("web2", severity=4, name="alto"),
+        ]
+    )
     assert [p["trigger"] for p in loc(snap, "sp")["problems"]] == ["alto", "baixo", "manut"]
 
 
