@@ -17,3 +17,6 @@ LOCATIONS = {
 }
 
 PORT = int(os.environ.get("PORT", 5004))
+
+# Host sem nenhum dado novo há mais que isso aparece como "Sem dados" (unknown).
+STALE_AFTER_SECONDS = int(os.environ.get("NOC_STALE_AFTER_SECONDS", 600))

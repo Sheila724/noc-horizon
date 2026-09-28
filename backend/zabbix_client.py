@@ -34,7 +34,7 @@ def get_active_problems() -> list[dict]:
     buscamos os hosts separadamente via trigger.get.
     """
     problems = _call("problem.get", {
-        "output": ["objectid", "name", "severity"],
+        "output": ["objectid", "name", "severity", "acknowledged", "suppressed"],
         "recent": False,
     })
 
@@ -56,6 +56,8 @@ def get_active_problems() -> list[dict]:
             "host": host_by_trigger.get(p.get("objectid")),
             "name": p.get("name"),
             "severity": int(p.get("severity", 0)),
+            "acknowledged": p.get("acknowledged") == "1",
+            "suppressed": p.get("suppressed") == "1",
         })
     return result
 

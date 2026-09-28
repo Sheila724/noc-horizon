@@ -5,7 +5,7 @@ Roda via gunicorn (ver README). Não chame app.run() em produção.
 """
 import time
 from flask import Flask, jsonify
-from aggregator import build_locations_status, build_summary
+from aggregator import build_snapshot
 
 app = Flask(__name__)
 
@@ -21,9 +21,7 @@ def api_locations():
     if _cache["data"] is not None and now - _cache["t"] < CACHE_TTL:
         return jsonify(_cache["data"]), 200
     try:
-        locations, problems = build_locations_status()
-        summary = build_summary(locations, problems)
-        data = {"ok": True, "locations": locations, "summary": summary}
+        data = {"ok": True, **build_snapshot()}
         _cache.update(t=now, data=data)
         return jsonify(data), 200
     except Exception:
