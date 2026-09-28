@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend · lint + testes
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements*.txt
+      - name: Instalar dependências
+        run: pip install -r requirements-dev.txt
+      - name: Ruff (lint)
+        run: ruff check --output-format=github .
+      - name: Ruff (formatação)
+        run: ruff format --check .
+      - name: Pytest
+        run: pytest -v
+
+  frontend:
+    name: Frontend · sintaxe JS
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: node --check
+        run: for f in js/*.js; do node --check "$f"; done
+      - name: Sem innerHTML com dados dinâmicos
+        run: |
+          if grep -n "innerHTML" js/app.js js/map.js; then
+            echo "::error::innerHTML encontrado — use textContent (risco de XSS)"; exit 1
+          fi
+
+  security:
+    name: Segurança · dependências + código
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Instalar ferramentas
+        run: pip install pip-audit bandit
+      - name: pip-audit (dependências vulneráveis)
+        run: pip-audit -r backend/requirements.txt
+      - name: Bandit (análise estática)
+        run: bandit -r backend -x backend/tests,backend/venv
+
+  secrets:
+    name: Segurança · segredos (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

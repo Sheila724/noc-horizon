@@ -1,0 +1,13 @@
+target-version = "py310"
+line-length = 100
+extend-exclude = ["venv", ".venv"]
+
+[lint]
+# E/W: estilo, F: erros, I: imports, B: bugs comuns, UP: sintaxe moderna, S: segurança (bandit)
+select = ["E", "F", "W", "I", "B", "UP", "S"]
+
+[lint.per-file-ignores]
+"tests/*" = ["S101"]   # assert é o normal em testes
+
+[lint.isort]
+known-first-party = ["aggregator", "config", "zabbix_client", "app"]

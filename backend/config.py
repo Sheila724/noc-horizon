@@ -12,8 +12,8 @@ HOST_LOCATION_MAP = {
 
 LOCATIONS = {
     "homelab": {"label": "Homelab (Franca, SP)", "lat": -20.539, "lon": -47.4009},
-    "com4":    {"label": "COM4 (São Paulo, SP)", "lat": -23.5505, "lon": -46.6333},
-    "vps":     {"label": "VPS (Riga, Letônia)", "lat": 56.95225, "lon": 24.11301},
+    "com4": {"label": "COM4 (São Paulo, SP)", "lat": -23.5505, "lon": -46.6333},
+    "vps": {"label": "VPS (Riga, Letônia)", "lat": 56.95225, "lon": 24.11301},
 }
 
 PORT = int(os.environ.get("PORT", 5004))
