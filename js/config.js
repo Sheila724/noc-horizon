@@ -2,7 +2,7 @@
 const CONFIG = {
   API_URL: "/api/locations",
   POLL_INTERVAL_MS: 15000,
-  WORLD_ATLAS_URL: "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json",
+  WORLD_ATLAS_URL: "data/countries-110m.json",
 
   STATUS_ORDER: ["ok", "warning", "attention", "critical"],
 

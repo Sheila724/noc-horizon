@@ -1,7 +1,7 @@
 import os
 
-ZABBIX_URL = os.environ.get("ZABBIX_URL", "http://179.197.73.111/zabbix/api_jsonrpc.php")
-ZABBIX_API_TOKEN = os.environ.get("ZABBIX_API_TOKEN", "eea3219dbbe367aaba757b21132b0ab9efd80deb7bf3a372f49187faf99e8a43")
+ZABBIX_URL = os.environ["ZABBIX_URL"]
+ZABBIX_API_TOKEN = os.environ["ZABBIX_API_TOKEN"]
 
 HOST_LOCATION_MAP = {
     "Proxmox-Acer": "homelab",
