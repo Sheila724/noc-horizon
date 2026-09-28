@@ -35,11 +35,13 @@ O objetivo é dar, em poucos segundos, uma leitura visual e intuitiva do estado 
 - 🌍 **Globo interativo** com rotação/arraste, construído em SVG + D3.js
 - 📍 **Localizações geolocalizadas** representando os pontos de infraestrutura monitorados
 - 🔴🟡🟢 **Indicadores de severidade** por cor (saudável, atenção, alerta, crítico), derivados da severidade dos problemas ativos no Zabbix
+- ⚪ **Detecção de "sem dados"** — host que para de enviar métricas fica cinza, em vez de continuar verde (falha silenciosa)
+- ✅ **Problemas reconhecidos** (*acknowledged*) sinalizados, e **problemas em manutenção** exibidos esmaecidos, sem colorir o local
 - 📊 **Painel unificado de operação**, mostrando:
   - Total de locais, hosts e alertas ativos
-  - Percentual de saúde geral
-  - Triggers ativos
-  - Locais com problema
+  - Saúde geral (% de **hosts** sem problema ativo e com dados recentes)
+  - Triggers ativos (e quantos já foram reconhecidos)
+  - Hosts com problema e hosts sem dados
   - Idade do dado mais antigo coletado
   - Latência da API do Zabbix
 - 🪟 **Modal detalhado por localização**, com a lista de problemas ativos em cada host
@@ -103,10 +105,13 @@ noc-horizon/
 │   └── countries-110m.json # Mapa-múndi (world-atlas)
 └── backend/
     ├── app.py              # Rotas HTTP (/api/locations, /health) + cache
-    ├── aggregator.py       # Agrega problemas por localização e monta o resumo
+    ├── aggregator.py       # Status por host/local e resumo (função pura, testável)
     ├── zabbix_client.py    # Cliente da API JSON-RPC do Zabbix
     ├── config.py           # Mapa host → localização; lê segredos do ambiente
     ├── requirements.txt
+    ├── requirements-dev.txt
+    ├── pytest.ini
+    ├── tests/              # Testes da agregação (pytest)
     └── .env.example        # Modelo das variáveis de ambiente (sem segredos)
 ```
 
@@ -138,6 +143,8 @@ ZABBIX_URL=http://127.0.0.1/zabbix/api_jsonrpc.php
 ZABBIX_API_TOKEN=coloque-o-token-aqui
 ```
 
+Opcional: `NOC_STALE_AFTER_SECONDS` (padrão `600`) — após quanto tempo sem dados um host aparece como **Sem dados**.
+
 Em produção, esses valores ficam em um arquivo fora do projeto (ex.: `/etc/noc-horizon/env`, com permissão `640`), carregado pelo systemd.
 
 ### 3. Mapear hosts e localizações
@@ -157,7 +164,17 @@ flask --app app run
 
 Para ver o frontend, sirva a raiz do projeto com um servidor estático (ex.: Live Server do VS Code). Abrir o `index.html` direto do disco não funciona, pois o navegador bloqueia o carregamento do mapa.
 
-### 5. Produção
+### 5. Testes
+
+```bash
+cd backend
+pip install -r requirements-dev.txt
+pytest
+```
+
+Os testes cobrem a lógica de status e do resumo: cálculo de saúde por host, problemas fora do mapa, estado "sem dados", reconhecidos e manutenção.
+
+### 6. Produção
 
 **Backend como serviço** (Gunicorn, usuário sem privilégios, só em localhost):
 
@@ -204,6 +221,22 @@ PrivateTmp=true
 ```
 
 Recomenda-se publicar o painel com **HTTPS** (Let's Encrypt ou certificado de origem da Cloudflare).
+
+---
+
+## 🚦 Como o status é calculado
+
+| Status | Quando |
+|---|---|
+| 🟢 Saudável | Nenhum problema ativo e dados recebidos há menos de `NOC_STALE_AFTER_SECONDS` |
+| ⚪ Sem dados | O host não envia dados novos há mais que o limite (ou nunca enviou) |
+| 🟡 Atenção | Pior problema ativo com severidade *Not classified*, *Information* ou *Warning* |
+| 🟠 Alerta | Pior problema ativo com severidade *Average* |
+| 🔴 Crítico | Pior problema ativo com severidade *High* ou *Disaster* |
+
+- O status de um **local** é o pior status entre os seus hosts.
+- Problemas **em manutenção** aparecem no detalhe, mas não colorem o local nem entram no total de alertas.
+- Problemas de hosts que não estão no mapa não entram no total (ficam em `unmapped_problems` na API).
 
 ---
 

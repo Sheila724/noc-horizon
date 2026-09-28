@@ -9,6 +9,7 @@
   --warning: #f0c93d;
   --attention: #ff9a3d;
   --critical: #ff3b5c;
+  --unknown: #a3adc2;
 }
 * { box-sizing: border-box; }
 html, body {
@@ -226,6 +227,7 @@ html, body {
 #legend .dot.warning   { background: var(--warning); }
 #legend .dot.attention { background: var(--attention); }
 #legend .dot.critical  { background: var(--critical); }
+#legend .dot.unknown   { background: var(--unknown); }
 #ticker {
   position: absolute;
   bottom: 0; left: 0; right: 0;
@@ -251,6 +253,7 @@ html, body {
   color: var(--muted);
 }
 #ticker-track span.problem { color: var(--warning); }
+#ticker-track span.stale { color: var(--unknown); }
 @keyframes ticker-scroll {
   from { transform: translateX(0); }
   to   { transform: translateX(-50%); }
@@ -352,6 +355,17 @@ svg:active { cursor: grabbing; }
   font-size: 12.5px;
 }
 #modal .problem .name { font-weight: 600; }
+#modal .problem.suppressed { opacity: 0.55; }
+#modal .tag {
+  display: inline-block;
+  margin: 6px 6px 0 0;
+  padding: 1px 8px;
+  border-radius: 10px;
+  border: 1px solid currentColor;
+  font-size: 11px;
+}
+#modal .tag.ack { color: var(--ok); }
+#modal .tag.maint { color: var(--muted); }
 #modal .empty { color: var(--muted); font-size: 13px; margin-top: 16px; }
 #modal .close { margin-top: 18px; text-align: right; }
 #modal button {

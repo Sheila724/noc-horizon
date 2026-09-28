@@ -4,6 +4,12 @@ function severityColorKey(sev) {
   if (sev === 3) return "attention";
   return "critical";
 }
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
 function openModal(loc) {
   document.getElementById("modal-title").textContent = loc.label;
   const badge = document.getElementById("modal-badge");
@@ -13,25 +19,32 @@ function openModal(loc) {
   badge.style.border = `1px solid ${CONFIG.STATUS_COLOR[loc.status]}`;
   const list = document.getElementById("modal-problems");
   list.replaceChildren();
-  if (!loc.problems || loc.problems.length === 0) {
-    const empty = document.createElement("div");
-    empty.className = "empty";
-    empty.textContent = "Nenhum problema ativo neste local.";
-    list.appendChild(empty);
-  } else {
-    loc.problems.forEach(p => {
-      const div = document.createElement("div");
-      div.className = "problem";
-      div.style.borderLeftColor = CONFIG.STATUS_COLOR[severityColorKey(p.severity)];
-      // textContent: nunca interpretar host/trigger (vindos do Zabbix) como HTML
-      const nameEl = document.createElement("div");
-      nameEl.className = "name";
-      nameEl.textContent = p.host ?? "—";
-      const trigEl = document.createElement("div");
-      trigEl.textContent = p.trigger ?? "";
-      div.append(nameEl, trigEl);
-      list.appendChild(div);
-    });
+
+  // Hosts que pararam de enviar dados (status "Sem dados")
+  (loc.hosts || []).filter(h => h.stale).forEach(h => {
+    const div = el("div", "problem stale");
+    div.style.borderLeftColor = CONFIG.STATUS_COLOR.unknown;
+    const msg = h.last_data_age_seconds == null
+      ? "Nenhum dado recebido do Zabbix"
+      : `Sem dados novos há ${formatDuration(h.last_data_age_seconds)}`;
+    div.append(el("div", "name", h.host), el("div", null, msg));
+    list.appendChild(div);
+  });
+
+  // Problemas ativos (textContent: nunca interpretar dados do Zabbix como HTML)
+  (loc.problems || []).forEach(p => {
+    const div = el("div", p.suppressed ? "problem suppressed" : "problem");
+    div.style.borderLeftColor = p.suppressed
+      ? "var(--muted)"
+      : CONFIG.STATUS_COLOR[severityColorKey(p.severity)];
+    div.append(el("div", "name", p.host ?? "—"), el("div", null, p.trigger ?? ""));
+    if (p.acknowledged) div.appendChild(el("span", "tag ack", "Reconhecido"));
+    if (p.suppressed) div.appendChild(el("span", "tag maint", "Em manutenção"));
+    list.appendChild(div);
+  });
+
+  if (!list.children.length) {
+    list.appendChild(el("div", "empty", "Nenhum problema ativo neste local."));
   }
   document.getElementById("modal-backdrop").style.display = "flex";
 }
@@ -51,39 +64,55 @@ function updateStatsCard(summary) {
     pillProblems.classList.toggle("alert", summary.active_problems > 0);
   }
 }
+function formatDuration(seconds) {
+  if (seconds < 60) return `${Math.round(seconds)}s`;
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 48) return `${hours}h`;
+  return `${Math.round(hours / 24)} dias`;
+}
 function formatAge(seconds) {
   if (seconds === null || seconds === undefined) return "—";
-  if (seconds < 60) return `${Math.round(seconds)}s atrás`;
-  const minutes = Math.round(seconds / 60);
-  if (minutes < 60) return `${minutes} min atrás`;
-  const hours = Math.round(minutes / 60);
-  return `${hours}h atrás`;
+  return `${formatDuration(seconds)} atrás`;
 }
-function updateSidePanel(summary, locations) {
+function updateSidePanel(summary) {
+  if (!summary) return;
   const healthEl = document.getElementById("panel-health");
   const triggersEl = document.getElementById("panel-triggers");
   const hostsProblemEl = document.getElementById("panel-hosts-problem");
   const lastCheckEl = document.getElementById("panel-last-check");
   const latencyEl = document.getElementById("panel-latency");
-  if (!summary) return;
-  const totalHosts = summary.hosts_count || 0;
-  const problems = summary.active_problems || 0;
-  const healthyHosts = Math.max(totalHosts - problems, 0);
-  const healthPct = totalHosts > 0 ? ((healthyHosts / totalHosts) * 100).toFixed(1) : "—";
+
+  const unhealthy = summary.hosts_unhealthy || 0;
+  const active = summary.active_problems || 0;
+
   if (healthEl) {
-    healthEl.textContent = healthPct + "%";
-    healthEl.className = "panel-value " + (problems > 0 ? "warn" : "ok");
+    // % de HOSTS saudáveis (sem problema ativo e com dados recentes)
+    healthEl.textContent = summary.health_pct != null ? `${summary.health_pct.toFixed(1)}%` : "—";
+    healthEl.className = "panel-value " + (unhealthy > 0 ? "warn" : "ok");
   }
   if (triggersEl) {
-    triggersEl.textContent = problems;
-    triggersEl.className = "panel-value " + (problems > 0 ? "warn" : "ok");
+    const ack = summary.acknowledged_problems || 0;
+    triggersEl.textContent = ack > 0 ? `${active} (${ack} ✓)` : `${active}`;
+    triggersEl.title = ack > 0 ? `${ack} reconhecido(s) no Zabbix` : "";
+    triggersEl.className = "panel-value " + (active > 0 ? "warn" : "ok");
   }
   if (hostsProblemEl) {
-    const locsComProblema = (locations || []).filter(l => l.problems && l.problems.length > 0).length;
-    hostsProblemEl.textContent = `${locsComProblema} / ${summary.locations_count}`;
+    hostsProblemEl.textContent = `${unhealthy} / ${summary.hosts_count}`;
+    hostsProblemEl.className = "panel-value " + (unhealthy > 0 ? "warn" : "ok");
+  }
+  const staleEl = document.getElementById("panel-hosts-stale");
+  if (staleEl) {
+    const stale = summary.hosts_stale || 0;
+    staleEl.textContent = `${stale}`;
+    staleEl.className = "panel-value " + (stale > 0 ? "warn" : "ok");
   }
   if (lastCheckEl) {
-    lastCheckEl.textContent = formatAge(summary.oldest_data_age_seconds);
+    const age = summary.oldest_data_age_seconds;
+    lastCheckEl.textContent = formatAge(age);
+    lastCheckEl.className = "panel-value " +
+      (age != null && age > summary.stale_after_seconds ? "warn" : "");
   }
   if (latencyEl) {
     latencyEl.textContent = summary.latency_ms != null ? `${summary.latency_ms} ms` : "—";
@@ -95,15 +124,15 @@ function updateTicker(locations) {
   const now = new Date().toLocaleTimeString("pt-BR");
   const spans = [];
   (locations || []).forEach(loc => {
-    const list = (loc.problems && loc.problems.length) ? loc.problems : [null];
-    list.forEach(p => {
-      const s = document.createElement("span");
-      if (p) s.className = "problem";
-      s.textContent = p
-        ? `[${now}] ${loc.label} · ${p.host ?? "—"} · ${p.trigger}`
-        : `[${now}] ${loc.label} · operacional`;
-      spans.push(s);
+    const entries = [];
+    (loc.hosts || []).filter(h => h.stale).forEach(h => {
+      entries.push(["stale", `${loc.label} · ${h.host} · sem dados`]);
     });
+    (loc.problems || []).filter(p => !p.suppressed).forEach(p => {
+      entries.push(["problem", `${loc.label} · ${p.host ?? "—"} · ${p.trigger}` + (p.acknowledged ? " ✓" : "")]);
+    });
+    if (!entries.length) entries.push(["", `${loc.label} · operacional`]);
+    entries.forEach(([cls, text]) => spans.push(el("span", cls || null, `[${now}] ${text}`)));
   });
   // duplicado para o efeito de rolagem contínua
   track.replaceChildren(...spans, ...spans.map(s => s.cloneNode(true)));
@@ -111,11 +140,12 @@ function updateTicker(locations) {
 async function fetchStatus() {
   try {
     const res = await fetch(CONFIG.API_URL, { cache: "no-store" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    if (!res.ok || !data.ok) throw new Error(data.erro || `HTTP ${res.status}`);
+    if (!data.ok) throw new Error(data.erro || "erro desconhecido");
     InfraMap.renderNodes(data.locations, openModal);
     updateStatsCard(data.summary);
-    updateSidePanel(data.summary, data.locations);
+    updateSidePanel(data.summary);
     updateTicker(data.locations);
     document.getElementById("last-update").textContent =
       "atualizado às " + new Date().toLocaleTimeString("pt-BR");

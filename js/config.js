@@ -4,10 +4,11 @@ const CONFIG = {
   POLL_INTERVAL_MS: 15000,
   WORLD_ATLAS_URL: "data/countries-110m.json",
 
-  STATUS_ORDER: ["ok", "warning", "attention", "critical"],
+  STATUS_ORDER: ["ok", "unknown", "warning", "attention", "critical"],
 
   STATUS_COLOR: {
     ok: "var(--ok)",
+    unknown: "var(--unknown)",
     warning: "var(--warning)",
     attention: "var(--attention)",
     critical: "var(--critical)",
@@ -15,6 +16,7 @@ const CONFIG = {
 
   STATUS_LABEL: {
     ok: "Saudável",
+    unknown: "Sem dados",
     warning: "Atenção",
     attention: "Alerta",
     critical: "Crítico",
