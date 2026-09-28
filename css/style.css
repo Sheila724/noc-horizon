@@ -222,6 +222,10 @@ html, body {
 }
 #legend .item { display: flex; align-items: center; gap: 6px; }
 #legend .dot { width: 8px; height: 8px; border-radius: 50%; }
+#legend .dot.ok        { background: var(--ok); }
+#legend .dot.warning   { background: var(--warning); }
+#legend .dot.attention { background: var(--attention); }
+#legend .dot.critical  { background: var(--critical); }
 #ticker {
   position: absolute;
   bottom: 0; left: 0; right: 0;

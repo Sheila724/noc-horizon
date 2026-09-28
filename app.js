@@ -111,8 +111,9 @@ function updateTicker(locations) {
 async function fetchStatus() {
   try {
     const res = await fetch(CONFIG.API_URL, { cache: "no-store" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    if (!res.ok || !data.ok) throw new Error(data.erro || `HTTP ${res.status}`);
+    if (!data.ok) throw new Error(data.erro || "erro desconhecido");
     InfraMap.renderNodes(data.locations, openModal);
     updateStatsCard(data.summary);
     updateSidePanel(data.summary, data.locations);
