@@ -221,7 +221,6 @@ Recomenda-se publicar o painel com **HTTPS** (Let's Encrypt ou certificado de or
 ## 🗺️ Roadmap
 
 - [ ] Autenticação/controle de acesso ao painel (ex.: OIDC/Keycloak no Apache)
-- [ ] Notificações de alertas críticos e resoluções via WhatsApp
 - [ ] Suporte a múltiplos provedores de monitoramento além do Zabbix
 - [ ] Histórico de disponibilidade (uptime) por localização
 
