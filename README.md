@@ -78,6 +78,7 @@ O objetivo é dar, em poucos segundos, uma leitura visual e intuitiva do estado 
 - 📰 **Ticker contínuo** no rodapé com os problemas ativos e o status operacional de cada local
 - 🔄 **Atualização automática** via polling configurável
 - ⚡ **Cache no backend** — vários navegadores abertos não multiplicam as consultas ao Zabbix
+- 📍 **Locais automáticos pelo inventário do Zabbix** — cadastre latitude/longitude no host e ele aparece no globo, sem editar código
 - 🌐 **Frontend sem build e sem CDN** — HTML, CSS e JS puros, com as bibliotecas servidas localmente
 
 ---
@@ -146,6 +147,7 @@ noc-horizon/
     ├── aggregator.py       # Status por host/local e resumo (função pura, testável)
     ├── zabbix_client.py    # Cliente da API JSON-RPC do Zabbix
     ├── demo_source.py      # Dados simulados para o modo demo
+    ├── discovery.py        # Locais lidos do inventário do Zabbix
     ├── dev_server.py       # Servidor local sem Docker (frontend + API)
     ├── Dockerfile          # Imagem do backend (usuário sem privilégios)
     ├── config.py           # Mapa host → localização; lê segredos do ambiente
@@ -171,7 +173,7 @@ noc-horizon/
 
 Não use o usuário Admin. No Zabbix:
 
-1. **Users → User roles** → crie um papel do tipo *User*, sem acesso à interface, com **API** permitida apenas para `problem.get`, `trigger.get` e `item.get`.
+1. **Users → User roles** → crie um papel do tipo *User*, sem acesso à interface, com **API** permitida apenas para `problem.get`, `trigger.get` e `item.get` (e `host.get`, se for usar o inventário).
 2. **Users → User groups** → crie um grupo com *Frontend access: Disabled* e permissão **Read** apenas nos grupos de hosts exibidos no mapa.
 3. **Users → Users** → crie o usuário do painel com esse grupo e papel.
 4. **Users → API tokens** → gere um token para esse usuário (com data de expiração).
@@ -193,7 +195,19 @@ Em produção, esses valores ficam em um arquivo fora do projeto (ex.: `/etc/noc
 
 ### 3. Mapear hosts e localizações
 
-Em `backend/config.py`, ajuste `HOST_LOCATION_MAP` (nome do host no Zabbix → localização) e `LOCATIONS` (rótulo e coordenadas de cada local).
+Há dois jeitos — escolha com a variável `NOC_LOCATIONS_FROM`:
+
+**a) Pelo inventário do Zabbix (`NOC_LOCATIONS_FROM=inventory`) — recomendado.** O globo se monta sozinho a partir do Zabbix, sem editar código:
+
+1. Em cada host: **Data collection → Hosts → (host) → aba Inventory**, escolha *Manual* (ou *Automatic*) e preencha:
+   - **Location** — nome do local no mapa (ex.: `São Paulo (BR)`). Hosts com o mesmo *Location* viram um único ponto.
+   - **Latitude** e **Longitude** — em graus decimais (ex.: `-23.55` e `-46.63`; vírgula também é aceita).
+2. No papel (*role*) do usuário da API, libere também o método **`host.get`**.
+3. Opcional: defina `NOC_HOST_TAG=noc` para que só hosts com a tag `noc` entrem no globo.
+
+Hosts sem coordenadas no inventário continuam usando o mapa estático do item (b). A lista é relida a cada 5 minutos (`NOC_DISCOVERY_TTL`) e, se o Zabbix falhar, a última lista válida continua sendo usada.
+
+**b) Estático (`NOC_LOCATIONS_FROM=config`, padrão).** Em `backend/config.py`, ajuste `HOST_LOCATION_MAP` (nome do host no Zabbix → localização) e `LOCATIONS` (rótulo e coordenadas de cada local).
 
 ### 4. Rodar localmente (desenvolvimento)
 

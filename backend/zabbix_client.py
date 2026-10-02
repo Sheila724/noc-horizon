@@ -103,3 +103,18 @@ def get_hosts_last_data() -> dict:
         if lastclock > last_by_host.get(host_name, 0):
             last_by_host[host_name] = lastclock
     return last_by_host
+
+
+def get_inventory_hosts(tag: str = "") -> list[dict]:
+    """
+    Hosts monitorados com os campos de localização do inventário.
+    Requer o método host.get liberado no papel (role) do usuário da API.
+    """
+    params = {
+        "output": ["host", "name"],
+        "selectInventory": ["location", "location_lat", "location_lon"],
+        "monitored_hosts": True,
+    }
+    if tag:
+        params["tags"] = [{"tag": tag, "operator": 4}]  # 4 = a tag existe
+    return _call("host.get", params)

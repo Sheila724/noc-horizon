@@ -10,6 +10,20 @@ ZABBIX_API_TOKEN = os.environ.get("ZABBIX_API_TOKEN", "")
 if NOC_MODE == "zabbix" and not (ZABBIX_URL and ZABBIX_API_TOKEN):
     raise RuntimeError("Defina ZABBIX_URL e ZABBIX_API_TOKEN, ou use NOC_MODE=demo")
 
+# De onde vêm os locais do globo:
+#   "config"    -> HOST_LOCATION_MAP / LOCATIONS abaixo (padrão)
+#   "inventory" -> inventário de cada host no Zabbix (Location, Latitude, Longitude);
+#                  hosts sem coordenadas no inventário continuam usando o mapa abaixo
+NOC_LOCATIONS_FROM = os.environ.get("NOC_LOCATIONS_FROM", "config").strip().lower()
+if NOC_LOCATIONS_FROM not in ("config", "inventory"):
+    raise RuntimeError(
+        f"NOC_LOCATIONS_FROM inválido: {NOC_LOCATIONS_FROM!r} (use 'config' ou 'inventory')"
+    )
+# Opcional: só hosts com esta tag no Zabbix entram no globo (ex.: NOC_HOST_TAG=noc)
+NOC_HOST_TAG = os.environ.get("NOC_HOST_TAG", "").strip()
+# A lista de hosts do inventário é relida a cada N segundos
+NOC_DISCOVERY_TTL = int(os.environ.get("NOC_DISCOVERY_TTL", 300))
+
 HOST_LOCATION_MAP = {
     "Proxmox-Acer": "homelab",
     "VM-Hermes": "homelab",
