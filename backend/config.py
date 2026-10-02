@@ -24,17 +24,23 @@ NOC_HOST_TAG = os.environ.get("NOC_HOST_TAG", "").strip()
 # A lista de hosts do inventário é relida a cada N segundos
 NOC_DISCOVERY_TTL = int(os.environ.get("NOC_DISCOVERY_TTL", 300))
 
+# Mapa estático de hosts -> locais. É usado quando NOC_LOCATIONS_FROM=config
+# (padrão) e, no modo "inventory", como reserva para hosts sem coordenadas.
+#
+#   HOST_LOCATION_MAP: "nome técnico do host no Zabbix" -> chave do local
+#   LOCATIONS:         chave do local -> rótulo e coordenadas (graus decimais)
+#
+# O exemplo abaixo usa o "Zabbix server", que existe em toda instalação do
+# Zabbix. Acrescente os seus hosts — ou, melhor, preencha o inventário de cada
+# host no Zabbix e use NOC_LOCATIONS_FROM=inventory (ver README).
 HOST_LOCATION_MAP = {
-    "Proxmox-Acer": "homelab",
-    "VM-Hermes": "homelab",
-    "Servidor-COM4-Universo": "com4",
-    "Zabbix server": "vps",
+    "Zabbix server": "matriz",
+    # "web-01": "filial-rj",
 }
 
 LOCATIONS = {
-    "homelab": {"label": "Homelab (Franca, SP)", "lat": -20.539, "lon": -47.4009},
-    "com4": {"label": "COM4 (São Paulo, SP)", "lat": -23.5505, "lon": -46.6333},
-    "vps": {"label": "VPS (Riga, Letônia)", "lat": 56.95225, "lon": 24.11301},
+    "matriz": {"label": "Matriz (São Paulo, SP)", "lat": -23.5505, "lon": -46.6333},
+    # "filial-rj": {"label": "Filial (Rio de Janeiro, RJ)", "lat": -22.9068, "lon": -43.1729},
 }
 
 PORT = int(os.environ.get("PORT", 5004))

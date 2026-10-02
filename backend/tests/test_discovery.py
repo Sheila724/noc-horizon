@@ -32,8 +32,8 @@ def test_hosts_com_mesmo_location_viram_um_ponto():
 
 
 def test_aceita_virgula_decimal():
-    host_map, locations = build_locations([host("a", "Franca", "-20,539", "-47,4009")], {}, {})
-    assert locations["franca"] == {"label": "Franca", "lat": -20.539, "lon": -47.4009}
+    host_map, locations = build_locations([host("a", "Curitiba", "-25,4284", "-49,2733")], {}, {})
+    assert locations["curitiba"] == {"label": "Curitiba", "lat": -25.4284, "lon": -49.2733}
 
 
 def test_ignora_coordenadas_vazias_invalidas_ou_fora_da_faixa():

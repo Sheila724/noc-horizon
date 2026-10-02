@@ -145,6 +145,13 @@ function updateTicker(locations) {
   // duplicado para o efeito de rolagem contínua
   track.replaceChildren(...spans, ...spans.map(s => s.cloneNode(true)));
 }
+// Com login OIDC no servidor, a API responde 401 quando a sessão expira:
+// recarregar a página leva a pessoa de volta à tela de login.
+function sessionExpired(res) {
+  if (res.status !== 401) return false;
+  window.location.reload();
+  return true;
+}
 let lastSla = null;
 function formatPct(value) {
   return value == null ? "—" : `${value.toFixed(2)}%`;
@@ -184,6 +191,7 @@ function updateSlaPanel(sla) {
 async function fetchSla() {
   try {
     const res = await fetch(CONFIG.SLA_URL, { cache: "no-store" });
+    if (sessionExpired(res)) return;
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     if (!data.ok) throw new Error(data.erro || "erro desconhecido");
@@ -196,6 +204,7 @@ async function fetchSla() {
 async function fetchStatus() {
   try {
     const res = await fetch(CONFIG.API_URL, { cache: "no-store" });
+    if (sessionExpired(res)) return;
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     if (!data.ok) throw new Error(data.erro || "erro desconhecido");
