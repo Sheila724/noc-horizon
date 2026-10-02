@@ -1,0 +1,27 @@
+# /etc/systemd/system/noc-horizon.service
+# Backend do NOC Horizon: Gunicorn só em localhost, usuário sem privilégios.
+[Unit]
+Description=NOC Horizon - Backend (Gunicorn)
+After=network.target apache2.service
+
+[Service]
+Type=simple
+User=noc
+Group=noc
+EnvironmentFile=/etc/noc-horizon/env
+WorkingDirectory=/opt/noc-horizon/backend
+ExecStart=/opt/noc-horizon/venv/bin/gunicorn --workers 2 --bind 127.0.0.1:5004 --access-logfile - app:app
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=multi-user.target

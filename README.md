@@ -131,7 +131,10 @@ noc-horizon/
 ├── docker-compose.yml      # Sobe frontend + backend (modo demo por padrão)
 ├── .env.example            # Variáveis do compose (modo, Zabbix, porta)
 ├── docker/web/             # Imagem do frontend: Nginx sem root + CSP
-├── docs/postmortems/       # Análises de incidentes (formato blameless)
+├── deploy/                 # Modelos de produção: systemd, Apache e script de atualização
+├── docs/
+│   ├── operacao.md         # Runbook: deploy, segredos, saúde e solução de problemas
+│   └── postmortems/        # Análises de incidentes (formato blameless)
 ├── index.html              # Estrutura da página (header, cards, globo, ticker, modal)
 ├── favicon.svg
 ├── css/
@@ -192,6 +195,21 @@ ZABBIX_API_TOKEN=coloque-o-token-aqui
 Para rodar **sem Zabbix**, use `NOC_MODE=demo` — as duas variáveis acima deixam de ser necessárias.
 
 Opcional: `NOC_STALE_AFTER_SECONDS` (padrão `600`) — após quanto tempo sem dados um host aparece como **Sem dados**.
+
+Todas as variáveis:
+
+| Variável | Padrão | Para que serve |
+|---|---|---|
+| `NOC_MODE` | `zabbix` | `zabbix` (dados reais) ou `demo` (dados simulados, sem Zabbix) |
+| `ZABBIX_URL` | — | URL da API (`.../api_jsonrpc.php`). Obrigatória no modo `zabbix` |
+| `ZABBIX_API_TOKEN` | — | Token de um usuário **somente leitura**. Obrigatório no modo `zabbix` |
+| `NOC_LOCATIONS_FROM` | `config` | `config` (mapa no `config.py`) ou `inventory` (inventário do Zabbix) |
+| `NOC_HOST_TAG` | — | Se definida, só hosts com esta tag entram no globo |
+| `NOC_DISCOVERY_TTL` | `300` | Segundos entre releituras do inventário |
+| `NOC_STALE_AFTER_SECONDS` | `600` | Sem dados por mais que isso → host fica **Sem dados** |
+| `NOC_SLO_TARGET` | `99.5` | Meta de disponibilidade (%) |
+| `NOC_SLO_MIN_SEVERITY` | `4` | Severidade mínima que conta como indisponibilidade (4 = *High*) |
+| `NOC_PORT` | `8080` | Porta local do painel no `docker compose` |
 
 Em produção, esses valores ficam em um arquivo fora do projeto (ex.: `/etc/noc-horizon/env`, com permissão `640`), carregado pelo systemd.
 
@@ -265,7 +283,8 @@ PrivateTmp=true
 ```apache
 <VirtualHost *:80>
     ServerName noc.seu-dominio.com
-    DocumentRoot /var/www/noc-horizon        # só index.html, favicon.svg, css/, js/, data/
+    # só index.html, favicon.svg, css/, js/, data/
+    DocumentRoot /var/www/noc-horizon
 
     <Directory /var/www/noc-horizon>
         Options -Indexes -FollowSymLinks
@@ -286,6 +305,8 @@ PrivateTmp=true
     ProxyPassReverse /api/ http://127.0.0.1:5004/api/
 </VirtualHost>
 ```
+
+O passo a passo completo de operação — deploy, rotação de token, verificação de saúde e solução de problemas — está no **[runbook de operação](docs/operacao.md)**. Os arquivos de produção ficam em [`deploy/`](deploy/).
 
 Recomenda-se publicar o painel com **HTTPS** (Let's Encrypt ou certificado de origem da Cloudflare).
 
