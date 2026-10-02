@@ -78,6 +78,7 @@ O objetivo é dar, em poucos segundos, uma leitura visual e intuitiva do estado 
 - 📰 **Ticker contínuo** no rodapé com os problemas ativos e o status operacional de cada local
 - 🔄 **Atualização automática** via polling configurável
 - ⚡ **Cache no backend** — vários navegadores abertos não multiplicam as consultas ao Zabbix
+- 📈 **Confiabilidade (SLO)** — disponibilidade de 7 e 30 dias por local, orçamento de erro, MTTR e MTTA, calculados a partir do histórico de eventos do Zabbix
 - 📍 **Locais automáticos pelo inventário do Zabbix** — cadastre latitude/longitude no host e ele aparece no globo, sem editar código
 - 🌐 **Frontend sem build e sem CDN** — HTML, CSS e JS puros, com as bibliotecas servidas localmente
 
@@ -148,6 +149,7 @@ noc-horizon/
     ├── zabbix_client.py    # Cliente da API JSON-RPC do Zabbix
     ├── demo_source.py      # Dados simulados para o modo demo
     ├── discovery.py        # Locais lidos do inventário do Zabbix
+    ├── sla.py              # Disponibilidade, SLO, orçamento de erro, MTTR e MTTA
     ├── dev_server.py       # Servidor local sem Docker (frontend + API)
     ├── Dockerfile          # Imagem do backend (usuário sem privilégios)
     ├── config.py           # Mapa host → localização; lê segredos do ambiente
@@ -173,7 +175,7 @@ noc-horizon/
 
 Não use o usuário Admin. No Zabbix:
 
-1. **Users → User roles** → crie um papel do tipo *User*, sem acesso à interface, com **API** permitida apenas para `problem.get`, `trigger.get` e `item.get` (e `host.get`, se for usar o inventário).
+1. **Users → User roles** → crie um papel do tipo *User*, sem acesso à interface, com **API** permitida apenas para `problem.get`, `trigger.get` e `item.get` (mais `host.get` para os locais pelo inventário e `event.get` para a confiabilidade/SLO).
 2. **Users → User groups** → crie um grupo com *Frontend access: Disabled* e permissão **Read** apenas nos grupos de hosts exibidos no mapa.
 3. **Users → Users** → crie o usuário do painel com esse grupo e papel.
 4. **Users → API tokens** → gere um token para esse usuário (com data de expiração).
@@ -302,6 +304,22 @@ Recomenda-se publicar o painel com **HTTPS** (Let's Encrypt ou certificado de or
 - O status de um **local** é o pior status entre os seus hosts.
 - Problemas **em manutenção** aparecem no detalhe, mas não colorem o local nem entram no total de alertas.
 - Problemas de hosts que não estão no mapa não entram no total (ficam em `unmapped_problems` na API).
+
+---
+
+## 📈 Confiabilidade: SLO, orçamento de erro, MTTR e MTTA
+
+O painel lateral mostra a confiabilidade dos **últimos 7 dias** e o modal de cada local mostra 7 e 30 dias (endpoint `GET /api/sla`). O histórico vem do próprio Zabbix (`event.get`) — o NOC Horizon não mantém banco de dados.
+
+| Métrica | Como é calculada |
+|---|---|
+| **Disponibilidade** | Um local fica indisponível enquanto qualquer host dele tiver um problema com severidade ≥ `NOC_SLO_MIN_SEVERITY` (padrão: *High*). Problemas em manutenção não contam. A disponibilidade geral é a média dos locais. |
+| **Meta (SLO)** | `NOC_SLO_TARGET` (padrão `99.5`%). |
+| **Orçamento de erro** | Quanto da indisponibilidade permitida pela meta ainda não foi gasto. Ex.: 99,5% em 7 dias permite ~50 min fora do ar. |
+| **MTTR** | Tempo médio entre o início e a resolução dos incidentes da janela. |
+| **MTTA** | Tempo médio até o primeiro reconhecimento (*acknowledge*) no Zabbix. |
+
+Para usar com um Zabbix real, libere `event.get` no papel (*role*) do usuário da API.
 
 ---
 

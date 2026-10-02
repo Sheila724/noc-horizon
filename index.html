@@ -57,6 +57,29 @@
     <span class="panel-label">Latência API</span>
     <span class="panel-value" id="panel-latency">—</span>
   </div>
+  <div class="ops-divider"></div>
+  <div class="panel-title">Confiabilidade · 7 dias</div>
+  <div class="panel-row">
+    <span class="panel-label" id="label-availability">Disponibilidade</span>
+    <span class="panel-value" id="panel-availability">—</span>
+  </div>
+  <div class="panel-row">
+    <span class="panel-label">Orçamento de erro</span>
+    <span class="panel-value" id="panel-budget">—</span>
+  </div>
+  <div class="budget-bar"><span id="budget-fill"></span></div>
+  <div class="panel-row">
+    <span class="panel-label" title="Tempo médio para resolver">MTTR</span>
+    <span class="panel-value" id="panel-mttr">—</span>
+  </div>
+  <div class="panel-row">
+    <span class="panel-label" title="Tempo médio para reconhecer">MTTA</span>
+    <span class="panel-value" id="panel-mtta">—</span>
+  </div>
+  <div class="panel-row">
+    <span class="panel-label">Incidentes</span>
+    <span class="panel-value" id="panel-incidents">—</span>
+  </div>
   <div id="last-update"></div>
 </div>
 <svg id="map"></svg>
@@ -80,6 +103,7 @@
   <div id="modal">
     <h2 id="modal-title"></h2>
     <span id="modal-badge" class="status-badge"></span>
+    <div id="modal-sla"></div>
     <div class="problem-list" id="modal-problems"></div>
     <div class="close"><button id="modal-close-btn">Fechar</button></div>
   </div>

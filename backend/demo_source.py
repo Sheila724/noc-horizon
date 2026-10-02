@@ -56,6 +56,55 @@ def _h(*parts) -> int:
     return int.from_bytes(hashlib.sha256(raw).digest()[:8], "big")
 
 
+_CRITICAL = [sc for sc in _SCENARIOS if sc[1] >= 4]
+_NORMAL = [sc for sc in _SCENARIOS if sc[1] < 4]
+
+
+def _recurrence(host):
+    """(seed, período, duração) em minutos, ou None se o host não tem incidentes."""
+    seed = _h(host)
+    if seed % 3 != 0:  # ~1/3 dos hosts têm incidentes recorrentes
+        return None
+    return seed, 7 + seed % 13, 2 + seed % 4  # período 7-19 min, duração 2-5 min
+
+
+def _scenario(host, episode):
+    """Cenário de um episódio. Incidentes graves (High/Disaster) são raros (~0,7%)."""
+    k = _h(host, episode)
+    pool = _CRITICAL if k % 150 == 0 else _NORMAL
+    return pool[k % len(pool)]
+
+
+def incidents(now: float, days: int = 30) -> list[dict]:
+    """Histórico de incidentes simulados (mesmo formato de zabbix_client.get_incidents)."""
+    now_min = int(now // 60)
+    lo_min = now_min - days * 1440
+    out = []
+    for host in HOST_MAP:
+        rec = _recurrence(host)
+        if rec is None:
+            continue
+        seed, period, duration = rec
+        for episode in range((lo_min + seed) // period, (now_min + seed) // period + 1):
+            start_min = episode * period - seed
+            if start_min > now_min:
+                break
+            name, severity = _scenario(host, episode)
+            start = start_min * 60
+            end = (start_min + duration) * 60
+            out.append(
+                {
+                    "host": host,
+                    "name": name,
+                    "severity": severity,
+                    "start": start,
+                    "end": end if end <= now else None,
+                    "ack": start + 60 if start + 60 <= now else None,
+                }
+            )
+    return out
+
+
 def generate(now: float) -> dict:
     """Devolve os argumentos de `aggregate()` para o instante `now`."""
     minute = int(now // 60)
@@ -66,15 +115,13 @@ def generate(now: float) -> dict:
         seed = _h(host)
         last_data[host] = now - (seed % 45)  # dado recebido há 0-44 s
 
-        # ~1/3 dos hosts têm incidentes recorrentes: período de 7-19 min,
-        # duração de 2-5 min, cada um com um cenário próprio.
-        if seed % 3 == 0:
-            period = 7 + seed % 13
-            duration = 2 + seed % 4
+        rec = _recurrence(host)
+        if rec is not None:
+            _, period, duration = rec
             phase = (minute + seed) % period
             if phase < duration:
                 episode = (minute + seed) // period
-                name, severity = _SCENARIOS[_h(host, episode) % len(_SCENARIOS)]
+                name, severity = _scenario(host, episode)
                 problems.append(
                     {
                         "host": host,

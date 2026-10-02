@@ -85,6 +85,7 @@ jobs:
         run: |
           curl -fsS http://localhost:8080/ | grep -q "NOC"
           curl -fsS http://localhost:8080/api/locations | python3 -c "import sys, json; d = json.load(sys.stdin); assert d['ok'] and d['mode'] == 'demo' and d['locations'], d; print('locais:', len(d['locations']), '| saude:', d['summary']['health_pct'])"
+          curl -fsS http://localhost:8080/api/sla | python3 -c "import sys, json; d = json.load(sys.stdin); w = d['windows']['7d']; assert d['ok'] and w['availability'] is not None, d; print('disponibilidade 7d:', w['availability'], '| MTTR:', w['mttr_seconds'], 's')"
           curl -fsSI http://localhost:8080/ | grep -qi "content-security-policy"
           test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/.env)" = "403"
       - name: Logs (em caso de falha)

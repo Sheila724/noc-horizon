@@ -10,6 +10,7 @@ from flask import Flask, jsonify
 
 from aggregator import build_snapshot
 from config import NOC_MODE
+from sla import build_sla
 
 app = Flask(__name__)
 
@@ -31,6 +32,25 @@ def api_locations():
     except Exception:
         app.logger.exception("falha ao consultar o Zabbix")
         return jsonify({"ok": False, "erro": "falha ao consultar o monitoramento"}), 502
+
+
+# O histórico muda devagar e a consulta é mais pesada: cache maior.
+SLA_CACHE_TTL = 60 if NOC_MODE == "demo" else 300
+_sla_cache = {"t": 0.0, "data": None}
+
+
+@app.route("/api/sla", methods=["GET"])
+def api_sla():
+    now = time.monotonic()
+    if _sla_cache["data"] is not None and now - _sla_cache["t"] < SLA_CACHE_TTL:
+        return jsonify(_sla_cache["data"]), 200
+    try:
+        data = {"ok": True, "mode": NOC_MODE, **build_sla()}
+        _sla_cache.update(t=now, data=data)
+        return jsonify(data), 200
+    except Exception:
+        app.logger.exception("falha ao calcular a confiabilidade")
+        return jsonify({"ok": False, "erro": "falha ao consultar o histórico"}), 502
 
 
 @app.route("/health", methods=["GET"])

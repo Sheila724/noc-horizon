@@ -118,3 +118,55 @@ def get_inventory_hosts(tag: str = "") -> list[dict]:
     if tag:
         params["tags"] = [{"tag": tag, "operator": 4}]  # 4 = a tag existe
     return _call("host.get", params)
+
+
+def get_incidents(time_from: float) -> list[dict]:
+    """
+    Problemas (eventos de trigger) desde `time_from`, com início, fim e primeiro
+    reconhecimento. Requer o método event.get no papel (role) do usuário da API.
+    Retorna [{"host", "name", "severity", "start", "end"|None, "ack"|None}].
+    """
+    events = _call(
+        "event.get",
+        {
+            "output": ["eventid", "clock", "r_eventid", "severity", "name", "suppressed"],
+            "source": 0,  # triggers
+            "object": 0,
+            "value": 1,  # eventos de PROBLEMA (a recuperação vem pelo r_eventid)
+            "time_from": int(time_from),
+            "selectHosts": ["host"],
+            "select_acknowledges": ["clock", "action"],
+            "sortfield": ["clock"],
+            "sortorder": "ASC",
+            "limit": 20000,
+        },
+    )
+
+    recovery_ids = [ev["r_eventid"] for ev in events if ev.get("r_eventid") not in (None, "0")]
+    recovered_at = {}
+    for i in range(0, len(recovery_ids), 1000):
+        chunk = recovery_ids[i : i + 1000]
+        for ev in _call("event.get", {"output": ["eventid", "clock"], "eventids": chunk}):
+            recovered_at[ev["eventid"]] = int(ev["clock"])
+
+    result = []
+    for ev in events:
+        hosts = ev.get("hosts") or []
+        if not hosts or ev.get("suppressed") == "1":  # manutenção não conta
+            continue
+        acks = [
+            int(a["clock"])
+            for a in ev.get("acknowledges", [])
+            if int(a.get("action", 0)) & 2  # bit 2 = "acknowledge"
+        ]
+        result.append(
+            {
+                "host": hosts[0]["host"],
+                "name": ev.get("name"),
+                "severity": int(ev.get("severity", 0)),
+                "start": int(ev["clock"]),
+                "end": recovered_at.get(ev.get("r_eventid")),
+                "ack": min(acks) if acks else None,
+            }
+        )
+    return result

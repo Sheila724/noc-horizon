@@ -44,5 +44,22 @@ def test_cenarios_especiais_aparecem_em_uma_hora():
         status_vistos |= {loc["status"] for loc in s["locations"]}
         teve_manutencao |= s["summary"]["suppressed_problems"] > 0
         teve_sem_dados |= s["summary"]["hosts_stale"] > 0
-    assert {"ok", "unknown", "critical"} <= status_vistos
+    assert {"ok", "unknown"} <= status_vistos
+    assert status_vistos & {"warning", "attention", "critical"}
     assert teve_manutencao and teve_sem_dados
+
+
+def test_incidentes_do_historico_batem_com_o_estado_atual():
+    # Todo problema ativo agora (não suprimido, de host mapeado) existe no histórico
+    now = T0 + 1234
+    agora = {
+        (p["host"], p["name"])
+        for p in demo_source.generate(now)["problems"]
+        if not p["suppressed"] and p["host"] in demo_source.HOST_MAP
+    }
+    abertos_ou_recentes = {
+        (i["host"], i["name"])
+        for i in demo_source.incidents(now, days=1)
+        if i["start"] <= now and (i["end"] is None or i["end"] > now)
+    }
+    assert agora == abertos_ou_recentes

@@ -17,6 +17,14 @@ function openModal(loc) {
   badge.style.background = CONFIG.STATUS_COLOR[loc.status] + "33";
   badge.style.color = CONFIG.STATUS_COLOR[loc.status];
   badge.style.border = `1px solid ${CONFIG.STATUS_COLOR[loc.status]}`;
+  const slaEl = document.getElementById("modal-sla");
+  if (slaEl) {
+    const w7 = lastSla && lastSla.windows["7d"].locations[loc.id];
+    const w30 = lastSla && lastSla.windows["30d"].locations[loc.id];
+    slaEl.textContent = w7 != null
+      ? `Disponibilidade: 7 dias ${formatPct(w7)} · 30 dias ${formatPct(w30)}`
+      : "";
+  }
   const list = document.getElementById("modal-problems");
   list.replaceChildren();
 
@@ -137,6 +145,54 @@ function updateTicker(locations) {
   // duplicado para o efeito de rolagem contínua
   track.replaceChildren(...spans, ...spans.map(s => s.cloneNode(true)));
 }
+let lastSla = null;
+function formatPct(value) {
+  return value == null ? "—" : `${value.toFixed(2)}%`;
+}
+function setValue(id, text, level) {
+  const node = document.getElementById(id);
+  if (!node) return;
+  node.textContent = text;
+  node.className = "panel-value" + (level ? ` ${level}` : "");
+}
+function updateSlaPanel(sla) {
+  const w = sla.windows["7d"];
+  const label = document.getElementById("label-availability");
+  if (label) {
+    label.textContent = `Disponib. (meta ${sla.target}%)`;
+    label.title = `Disponibilidade média dos locais; meta (SLO) de ${sla.target}%`;
+  }
+
+  setValue("panel-availability", formatPct(w.availability),
+    w.availability == null ? "" : w.availability >= sla.target ? "ok" : "crit");
+
+  const budget = w.error_budget_remaining_pct;
+  const budgetLevel = budget == null ? "" : budget > 50 ? "ok" : budget > 0 ? "warn" : "crit";
+  setValue("panel-budget", budget == null ? "—" : `${budget.toFixed(0)}% restante`, budgetLevel);
+  const fill = document.getElementById("budget-fill");
+  if (fill) {
+    fill.style.width = `${budget || 0}%`;
+    fill.style.background = budgetLevel === "ok" ? "var(--ok)"
+      : budgetLevel === "warn" ? "var(--attention)" : "var(--critical)";
+  }
+
+  setValue("panel-mttr", w.mttr_seconds == null ? "—" : formatDuration(w.mttr_seconds));
+  setValue("panel-mtta", w.mtta_seconds == null ? "—" : formatDuration(w.mtta_seconds));
+  setValue("panel-incidents",
+    w.open_incidents > 0 ? `${w.incidents} (${w.open_incidents} abertos)` : `${w.incidents}`);
+}
+async function fetchSla() {
+  try {
+    const res = await fetch(CONFIG.SLA_URL, { cache: "no-store" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.erro || "erro desconhecido");
+    lastSla = data;
+    updateSlaPanel(data);
+  } catch (e) {
+    console.warn("Confiabilidade indisponível:", e.message);
+  }
+}
 async function fetchStatus() {
   try {
     const res = await fetch(CONFIG.API_URL, { cache: "no-store" });
@@ -175,5 +231,7 @@ setInterval(updateLiveClock, 1000);
 document.getElementById("modal-close-btn").addEventListener("click", closeModal);
 InfraMap.setup(() => {
   fetchStatus();
+  fetchSla();
   setInterval(fetchStatus, CONFIG.POLL_INTERVAL_MS);
+  setInterval(fetchSla, CONFIG.SLA_POLL_INTERVAL_MS);
 });

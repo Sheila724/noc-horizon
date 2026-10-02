@@ -41,3 +41,8 @@ PORT = int(os.environ.get("PORT", 5004))
 
 # Host sem nenhum dado novo há mais que isso aparece como "Sem dados" (unknown).
 STALE_AFTER_SECONDS = int(os.environ.get("NOC_STALE_AFTER_SECONDS", 600))
+
+# SLO: meta de disponibilidade (%) e severidade mínima que conta como indisponibilidade
+# (Zabbix: 0 Not classified, 1 Information, 2 Warning, 3 Average, 4 High, 5 Disaster)
+NOC_SLO_TARGET = float(os.environ.get("NOC_SLO_TARGET", 99.5))
+NOC_SLO_MIN_SEVERITY = int(os.environ.get("NOC_SLO_MIN_SEVERITY", 4))

@@ -2,6 +2,8 @@
 const CONFIG = {
   API_URL: "/api/locations",
   POLL_INTERVAL_MS: 15000,
+  SLA_URL: "/api/sla",
+  SLA_POLL_INTERVAL_MS: 60000,
   WORLD_ATLAS_URL: "data/countries-110m.json",
 
   STATUS_ORDER: ["ok", "unknown", "warning", "attention", "critical"],
