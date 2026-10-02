@@ -492,3 +492,18 @@ svg:active { cursor: grabbing; }
     margin-right: 24px;
   }
 }
+
+/* Selo exibido quando o backend roda com NOC_MODE=demo */
+#mode-badge {
+  display: block;
+  width: fit-content;
+  margin-top: 10px;
+  padding: 3px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--warning);
+  background: rgba(240, 201, 61, 0.08);
+  color: var(--warning);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+}
+#mode-badge[hidden] { display: none; }

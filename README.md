@@ -10,7 +10,33 @@
 ![Testes](https://img.shields.io/badge/testes-pytest-0a9edc?style=flat-square&logo=pytest&logoColor=white)
 ![Lint](https://img.shields.io/badge/lint-ruff-d7ff64?style=flat-square&logo=ruff&logoColor=black)
 ![Segredos](https://img.shields.io/badge/segredos-gitleaks-ff3b5c?style=flat-square)
+![Docker](https://img.shields.io/badge/docker-compose-2496ED?style=flat-square&logo=docker&logoColor=white)
 ![Licença](https://img.shields.io/badge/license-MIT-7d8bab?style=flat-square)
+
+---
+
+## ⚡ Teste em 1 minuto (sem Zabbix)
+
+Só precisa do [Docker](https://docs.docker.com/get-docker/):
+
+```bash
+git clone https://github.com/Sheila724/noc-horizon.git
+cd noc-horizon
+docker compose up -d --build
+```
+
+Abra **http://localhost:8080** 🚀
+
+O painel sobe em **modo demo**: 12 locais pelo mundo e 42 hosts simulados, com incidentes que aparecem, são reconhecidos e resolvidos sozinhos, um host em manutenção e outro que para de enviar dados de tempos em tempos. Para desligar: `docker compose down`.
+
+**Sem Docker?** Com Python 3.10+ também dá:
+
+```bash
+pip install -r backend/requirements.txt
+python backend/dev_server.py
+```
+
+> Quer ligar no seu Zabbix? Copie `.env.example` para `.env`, defina `NOC_MODE=zabbix`, `ZABBIX_URL` e `ZABBIX_API_TOKEN`, e rode `docker compose up -d --build` de novo.
 
 ---
 
@@ -100,6 +126,10 @@ noc-horizon/
 │   ├── workflows/ci.yml    # CI: lint, testes, pip-audit, bandit, gitleaks
 │   └── dependabot.yml      # Atualização semanal de dependências
 ├── .pre-commit-config.yaml # Hooks locais (gitleaks, ruff)
+├── docker-compose.yml      # Sobe frontend + backend (modo demo por padrão)
+├── .env.example            # Variáveis do compose (modo, Zabbix, porta)
+├── docker/web/             # Imagem do frontend: Nginx sem root + CSP
+├── docs/postmortems/       # Análises de incidentes (formato blameless)
 ├── index.html              # Estrutura da página (header, cards, globo, ticker, modal)
 ├── favicon.svg
 ├── css/
@@ -115,6 +145,9 @@ noc-horizon/
     ├── app.py              # Rotas HTTP (/api/locations, /health) + cache
     ├── aggregator.py       # Status por host/local e resumo (função pura, testável)
     ├── zabbix_client.py    # Cliente da API JSON-RPC do Zabbix
+    ├── demo_source.py      # Dados simulados para o modo demo
+    ├── dev_server.py       # Servidor local sem Docker (frontend + API)
+    ├── Dockerfile          # Imagem do backend (usuário sem privilégios)
     ├── config.py           # Mapa host → localização; lê segredos do ambiente
     ├── requirements.txt
     ├── requirements-dev.txt
@@ -151,6 +184,8 @@ O backend lê os segredos **somente do ambiente** — nunca coloque token ou URL
 ZABBIX_URL=http://127.0.0.1/zabbix/api_jsonrpc.php
 ZABBIX_API_TOKEN=coloque-o-token-aqui
 ```
+
+Para rodar **sem Zabbix**, use `NOC_MODE=demo` — as duas variáveis acima deixam de ser necessárias.
 
 Opcional: `NOC_STALE_AFTER_SECONDS` (padrão `600`) — após quanto tempo sem dados um host aparece como **Sem dados**.
 
@@ -266,6 +301,7 @@ Cada push e pull request roda no GitHub Actions:
 | Frontend | Sintaxe dos arquivos JS e ausência de `innerHTML` (XSS) |
 | Segurança | `pip-audit` (dependências com CVE) e `bandit` (análise estática) |
 | Segredos | `gitleaks` (tokens e senhas commitados) |
+| Docker | Sobe o `docker compose` em modo demo e testa painel, API, CSP e bloqueio de arquivos ocultos |
 
 O **Dependabot** abre PRs semanais com atualizações de dependências Python e das actions.
 
@@ -279,6 +315,7 @@ O **Dependabot** abre PRs semanais com atualizações de dependências Python e 
 - Dados vindos do Zabbix são inseridos no DOM com `textContent` (sem `innerHTML`), evitando XSS.
 - Frontend sem dependências externas, protegido por Content Security Policy.
 - Segredos barrados antes do commit (pre-commit + gitleaks) e verificados de novo no CI.
+- 📄 Incidentes viram aprendizado: veja o [postmortem do token exposto](docs/postmortems/2026-09-27-token-zabbix-exposto.md).
 - ⚠️ O painel ainda **não possui autenticação**: qualquer pessoa com a URL vê nomes de hosts e problemas ativos. Veja o roadmap.
 
 ---

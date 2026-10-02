@@ -1,7 +1,14 @@
 import os
 
-ZABBIX_URL = os.environ["ZABBIX_URL"]
-ZABBIX_API_TOKEN = os.environ["ZABBIX_API_TOKEN"]
+# "zabbix" (padrão, produção) ou "demo" (dados simulados, sem Zabbix)
+NOC_MODE = os.environ.get("NOC_MODE", "zabbix").strip().lower()
+if NOC_MODE not in ("zabbix", "demo"):
+    raise RuntimeError(f"NOC_MODE inválido: {NOC_MODE!r} (use 'zabbix' ou 'demo')")
+
+ZABBIX_URL = os.environ.get("ZABBIX_URL", "")
+ZABBIX_API_TOKEN = os.environ.get("ZABBIX_API_TOKEN", "")
+if NOC_MODE == "zabbix" and not (ZABBIX_URL and ZABBIX_API_TOKEN):
+    raise RuntimeError("Defina ZABBIX_URL e ZABBIX_API_TOKEN, ou use NOC_MODE=demo")
 
 HOST_LOCATION_MAP = {
     "Proxmox-Acer": "homelab",

@@ -146,13 +146,33 @@ const InfraMap = (() => {
     drawNodes();
   }
 
-  function drawConnections() {
+  // Liga cada local aos seus vizinhos mais próximos. Com poucos locais vira
+  // uma malha completa; com muitos, evita uma "teia" ilegível no globo.
+  const MAX_NEIGHBORS = 2;
+  function buildPairs() {
+    const locs = currentLocations;
+    const seen = new Set();
     const pairs = [];
-    for (let i = 0; i < currentLocations.length; i++) {
-      for (let j = i + 1; j < currentLocations.length; j++) {
-        pairs.push([currentLocations[i], currentLocations[j]]);
-      }
-    }
+    locs.forEach((a, i) => {
+      locs
+        .map((b, j) => ({ j, d: d3.geoDistance([a.lon, a.lat], [b.lon, b.lat]) }))
+        .filter(x => x.j !== i)
+        .sort((x, y) => x.d - y.d)
+        .slice(0, MAX_NEIGHBORS)
+        .forEach(({ j }) => {
+          const [lo, hi] = i < j ? [i, j] : [j, i];
+          const key = `${lo}-${hi}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            pairs.push([locs[lo], locs[hi]]);
+          }
+        });
+    });
+    return pairs;
+  }
+
+  function drawConnections() {
+    const pairs = buildPairs();
     const lines = pairs.map(([a, b]) => ({
       type: "LineString",
       coordinates: [[a.lon, a.lat], [b.lon, b.lat]],
@@ -172,12 +192,7 @@ const InfraMap = (() => {
   }
 
   function buildParticles() {
-    const pairs = [];
-    for (let i = 0; i < currentLocations.length; i++) {
-      for (let j = i + 1; j < currentLocations.length; j++) {
-        pairs.push([currentLocations[i], currentLocations[j]]);
-      }
-    }
+    const pairs = buildPairs();
     particles = [];
     pairs.forEach(([a, b]) => {
       const status = worstOf(a.status, b.status);

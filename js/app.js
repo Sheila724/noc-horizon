@@ -143,6 +143,8 @@ async function fetchStatus() {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     if (!data.ok) throw new Error(data.erro || "erro desconhecido");
+    const modeBadge = document.getElementById("mode-badge");
+    if (modeBadge) modeBadge.hidden = data.mode !== "demo";
     InfraMap.renderNodes(data.locations, openModal);
     updateStatsCard(data.summary);
     updateSidePanel(data.summary);

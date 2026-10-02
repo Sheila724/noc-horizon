@@ -9,6 +9,7 @@ import time
 from flask import Flask, jsonify
 
 from aggregator import build_snapshot
+from config import NOC_MODE
 
 app = Flask(__name__)
 
@@ -24,7 +25,7 @@ def api_locations():
     if _cache["data"] is not None and now - _cache["t"] < CACHE_TTL:
         return jsonify(_cache["data"]), 200
     try:
-        data = {"ok": True, **build_snapshot()}
+        data = {"ok": True, "mode": NOC_MODE, **build_snapshot()}
         _cache.update(t=now, data=data)
         return jsonify(data), 200
     except Exception:
@@ -34,4 +35,4 @@ def api_locations():
 
 @app.route("/health", methods=["GET"])
 def health():
-    return jsonify({"status": "ok"}), 200
+    return jsonify({"status": "ok", "mode": NOC_MODE}), 200

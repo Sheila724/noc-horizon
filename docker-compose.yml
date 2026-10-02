@@ -1,0 +1,37 @@
+# NOC Horizon — sobe tudo com:  docker compose up -d --build
+# Depois abra http://localhost:8080
+#
+# Por padrão roda em MODO DEMO (dados simulados, sem Zabbix).
+# Para usar um Zabbix real, copie .env.example para .env e ajuste.
+name: noc-horizon
+
+x-hardening: &hardening
+  read_only: true
+  tmpfs:
+    - /tmp
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+  restart: unless-stopped
+
+services:
+  api:
+    <<: *hardening
+    build: ./backend
+    environment:
+      NOC_MODE: ${NOC_MODE:-demo}
+      ZABBIX_URL: ${ZABBIX_URL:-}
+      ZABBIX_API_TOKEN: ${ZABBIX_API_TOKEN:-}
+      NOC_STALE_AFTER_SECONDS: ${NOC_STALE_AFTER_SECONDS:-600}
+
+  web:
+    <<: *hardening
+    build:
+      context: .
+      dockerfile: docker/web/Dockerfile
+    ports:
+      - "${NOC_PORT:-8080}:8080"
+    depends_on:
+      api:
+        condition: service_healthy

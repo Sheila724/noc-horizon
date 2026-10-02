@@ -73,3 +73,23 @@ jobs:
       - uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  docker:
+    name: Docker · compose em modo demo
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Subir a stack
+        run: docker compose up -d --build --wait --wait-timeout 180
+      - name: Testar painel, API e cabeçalhos
+        run: |
+          curl -fsS http://localhost:8080/ | grep -q "NOC"
+          curl -fsS http://localhost:8080/api/locations | python3 -c "import sys, json; d = json.load(sys.stdin); assert d['ok'] and d['mode'] == 'demo' and d['locations'], d; print('locais:', len(d['locations']), '| saude:', d['summary']['health_pct'])"
+          curl -fsSI http://localhost:8080/ | grep -qi "content-security-policy"
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/.env)" = "403"
+      - name: Logs (em caso de falha)
+        if: failure()
+        run: docker compose logs
+      - name: Derrubar
+        if: always()
+        run: docker compose down

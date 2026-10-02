@@ -1,0 +1,9 @@
+.git
+.github
+backend
+docker/**/*.md
+**/__pycache__
+**/venv
+*.md
+.env
+.env.*

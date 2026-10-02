@@ -136,9 +136,17 @@ def aggregate(problems, last_data, host_map, locations, now, stale_after, latenc
 
 
 def build_snapshot():
-    """Busca os dados no Zabbix e devolve o snapshot agregado."""
+    """Busca os dados (Zabbix ou simulação) e devolve o snapshot agregado."""
+    from config import HOST_LOCATION_MAP, LOCATIONS, NOC_MODE, STALE_AFTER_SECONDS
+
+    now = time.time()
+
+    if NOC_MODE == "demo":
+        import demo_source
+
+        return aggregate(**demo_source.generate(now), now=now, stale_after=STALE_AFTER_SECONDS)
+
     import zabbix_client as zc
-    from config import HOST_LOCATION_MAP, LOCATIONS, STALE_AFTER_SECONDS
 
     problems = zc.get_active_problems()  # se falhar, a API devolve erro (sem dados parciais)
 
@@ -159,7 +167,7 @@ def build_snapshot():
         last_data=last_data,
         host_map=HOST_LOCATION_MAP,
         locations=LOCATIONS,
-        now=time.time(),
+        now=now,
         stale_after=STALE_AFTER_SECONDS,
         latency_ms=latency_ms,
     )
