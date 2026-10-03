@@ -41,7 +41,7 @@ jobs:
         with:
           node-version: "20"
       - name: node --check
-        run: for f in js/*.js; do node --check "$f"; done
+        run: for f in js/*.js public/*.js; do node --check "$f"; done
       - name: Sem innerHTML com dados dinâmicos
         run: |
           if grep -n "innerHTML" js/app.js js/map.js; then

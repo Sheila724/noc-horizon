@@ -1,0 +1,68 @@
+/* Páginas públicas do login (acesso negado / saída) — mesmo visual do painel */
+:root {
+  --bg-deep: #030712;
+  --bg-mid: #0a1128;
+  --text: #e6edf7;
+  --muted: #7d8bab;
+  --ok: #22d67a;
+  --critical: #ff3b5c;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  min-height: 100%;
+  background: radial-gradient(ellipse at 50% 30%, var(--bg-mid) 0%, var(--bg-deep) 70%);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px;
+}
+.card {
+  width: 100%;
+  max-width: 440px;
+  padding: 36px 32px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(10, 17, 40, 0.75);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+  text-align: center;
+}
+.brand {
+  margin: 0 0 28px;
+  font-size: 22px;
+  letter-spacing: 0.18em;
+}
+.brand .noc { font-weight: 800; color: #9cc3ff; }
+.brand .light { font-weight: 300; color: var(--muted); }
+.icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+}
+.icon.denied { background: rgba(255, 59, 92, 0.12); color: var(--critical); }
+.icon.bye { background: rgba(34, 214, 122, 0.12); color: var(--ok); }
+h2 { margin: 0 0 10px; font-size: 20px; }
+p { margin: 0 0 26px; color: var(--muted); font-size: 14px; line-height: 1.55; }
+.button {
+  display: inline-block;
+  padding: 11px 22px;
+  border-radius: 10px;
+  background: #1d3a7a;
+  border: 1px solid #3a63c4;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.button:hover { background: #24479a; }
+.footer { margin-top: 26px; font-size: 11px; letter-spacing: 0.1em; color: var(--muted); }

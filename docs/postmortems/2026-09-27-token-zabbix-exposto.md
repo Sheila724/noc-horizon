@@ -88,9 +88,9 @@ O incidente não teve uma causa única. Foram várias falhas pequenas que se som
 | 10 | Histórico do Git limpo (código e binários) | Correção | ✅ Feito |
 | 11 | Revisar o *audit log* do Zabbix no período da exposição | Verificação | ⏳ Pendente |
 | 12 | `mod_remoteip` no Apache, para registrar o IP real do visitante atrás da Cloudflare | Detecção | ⏳ Pendente |
-| 13 | HTTPS de ponta a ponta (certificado de origem + Cloudflare *Full strict*) | Prevenção | 🔄 Em andamento — hoje o trecho Cloudflare → servidor ainda é HTTP (*Flexible*) |
+| 13 | HTTPS de ponta a ponta (certificado de origem + Cloudflare *Full strict*) | Prevenção | ✅ Feito |
 | 14 | Liberar as portas 80/443 da VPS só para os IPs da Cloudflare | Prevenção | ⏳ Pendente |
-| 15 | Autenticação no painel | Prevenção | ⏳ Pendente |
+| 15 | Autenticação no painel (login OIDC no Apache) | Prevenção | ✅ Feito |
 | 16 | Data de expiração no token e rotina de rotação | Prevenção | ⏳ Pendente |
 | 17 | fail2ban no SSH, com bloqueio progressivo para reincidentes | Prevenção | ✅ Feito |
 

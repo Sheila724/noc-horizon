@@ -6,6 +6,7 @@ COPY index.html favicon.svg /usr/share/nginx/html/
 COPY css  /usr/share/nginx/html/css
 COPY js   /usr/share/nginx/html/js
 COPY data /usr/share/nginx/html/data
+COPY public /usr/share/nginx/html/public
 
 EXPOSE 8080
 

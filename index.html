@@ -13,6 +13,10 @@
     <h1><span class="brand-noc">NOC</span> <span class="brand-light">HORIZON</span></h1>
     <div class="sub">Central de Operações · monitoramento global em tempo real</div>
     <div id="mode-badge" hidden>MODO DEMO · dados simulados</div>
+    <div id="user-chip" hidden>
+      <span class="user-dot"></span><span id="user-name"></span>
+      <span class="user-sep">·</span><a id="logout-link" href="#">Sair</a>
+    </div>
   </div>
   <div id="live-clock"></div>
 </div>
@@ -96,6 +100,7 @@
   <div class="item"><span class="dot attention"></span>Alerta</div>
   <div class="item"><span class="dot critical"></span>Crítico</div>
 </div>
+<div id="welcome-toast" role="status" aria-live="polite" hidden></div>
 <div id="ticker">
   <div id="ticker-track"></div>
 </div>

@@ -3,6 +3,8 @@ const CONFIG = {
   API_URL: "/api/locations",
   POLL_INTERVAL_MS: 15000,
   SLA_URL: "/api/sla",
+  ME_URL: "/api/me",
+  LOGOUT_TO: "/public/saiu.html",
   SLA_POLL_INTERVAL_MS: 60000,
   WORLD_ATLAS_URL: "data/countries-110m.json",
 

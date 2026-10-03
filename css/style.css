@@ -528,3 +528,48 @@ svg:active { cursor: grabbing; }
   color: var(--muted);
   font-size: 12px;
 }
+
+/* Usuário logado (login OIDC) */
+#user-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  margin-top: 10px;
+  padding: 3px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  font-size: 12px;
+}
+#user-chip[hidden] { display: none; }
+#user-chip .user-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ok);
+}
+#user-chip .user-sep { color: var(--muted); }
+#user-chip a { color: var(--muted); text-decoration: none; }
+#user-chip a:hover { color: var(--text); text-decoration: underline; }
+
+/* Boas-vindas após o login */
+#welcome-toast {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  z-index: 50;
+  padding: 12px 22px;
+  border-radius: 12px;
+  border: 1px solid rgba(34, 214, 122, 0.35);
+  background: rgba(10, 17, 40, 0.92);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  color: var(--text);
+  font-size: 14px;
+  opacity: 0;
+  transform: translate(-50%, -12px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+#welcome-toast[hidden] { display: none; }
+#welcome-toast.show { opacity: 1; transform: translate(-50%, 0); }

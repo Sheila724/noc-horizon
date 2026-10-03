@@ -10,7 +10,7 @@ Escrito para que qualquer pessoa da equipe consiga operar o painel sem depender 
 ## 1. Como a produção está montada
 
 ```
-Navegador ──HTTPS──► Cloudflare ──► Apache (80/443)
+Navegador ──HTTPS──► Cloudflare (Full strict) ──HTTPS──► Apache 443 + login OIDC
                                       ├── /         → /var/www/noc-horizon  (só o frontend)
                                       ├── /api/     → Gunicorn 127.0.0.1:5004 (backend)
                                       └── /zabbix   → interface do Zabbix
@@ -25,6 +25,8 @@ Backend ──JSON-RPC (localhost)──► API do Zabbix
 | Segredos e configuração | `/etc/noc-horizon/env` (permissão `640`, `root:noc`) |
 | Serviço do backend | systemd — modelo em [`deploy/noc-horizon.service`](../deploy/noc-horizon.service) |
 | Vhost do Apache | modelo em [`deploy/apache-noc-horizon.conf`](../deploy/apache-noc-horizon.conf) |
+| Login OIDC | `/etc/apache2/noc-oidc.conf` (permissão `600`) — modelo em [`deploy/apache-noc-oidc.conf`](../deploy/apache-noc-oidc.conf) |
+| Certificado de origem (Cloudflare) | `/etc/ssl/cloudflare/` |
 | Script de atualização | `/usr/local/bin/noc-atualizar` — fonte em [`deploy/noc-atualizar.sh`](../deploy/noc-atualizar.sh) |
 | Logs do backend | `journalctl -u noc-horizon` |
 | Logs do Apache | `/var/log/apache2/noc-horizon-*.log` |
@@ -39,7 +41,7 @@ Backend ──JSON-RPC (localhost)──► API do Zabbix
 
 ```powershell
 cd $HOME\Documents\noc-horizon
-tar -czf $env:TEMP\noc.tgz --exclude=venv --exclude=__pycache__ --exclude=tests index.html favicon.svg css js data backend
+tar -czf $env:TEMP\noc.tgz --exclude=venv --exclude=__pycache__ --exclude=tests index.html favicon.svg css js data public backend
 scp $env:TEMP\noc.tgz root@IP-DA-VPS:~/
 ssh root@IP-DA-VPS "rm -rf ~/upload && mkdir ~/upload && tar -xzf ~/noc.tgz -C ~/upload && rm ~/noc.tgz"
 ```
@@ -110,6 +112,14 @@ done
 
 Esperado: `200` para `/`, `/api/locations` e `/api/sla`; `403` ou `404` para `/backend/config.py` e `/.git/config`.
 
+Com o **login OIDC ativo**, os testes acima pela porta 80 respondem `301` (redireciona para HTTPS). Teste o login assim:
+
+```bash
+curl -s -o /dev/null -w "%{http_code} -> %{redirect_url}\n" https://noc.seu-dominio.com/ | cut -c1-80   # 302 -> provedor de login
+curl -s -o /dev/null -w "%{http_code}\n" https://noc.seu-dominio.com/api/locations                     # 401
+curl -s http://127.0.0.1:5004/health                                                                    # backend por dentro: ok
+```
+
 > **Atenção:** teste sempre com o cabeçalho `Host` do domínio do painel. Um teste em `http://127.0.0.1/` sem ele cai no vhost padrão do Apache e pode dar um falso "tudo certo" — foi exatamente o que aconteceu no [incidente de 27/09](postmortems/2026-09-27-token-zabbix-exposto.md).
 
 Status de cada local e host:
@@ -132,6 +142,8 @@ curl -s http://127.0.0.1:5004/api/locations | python3 -c "import sys,json; [prin
 | Confiabilidade mostra **"—"** / `/api/sla` com `ok: false` | Falta `event.get` no papel da API | Libere o método (seção 3) e aguarde até 5 min (cache). |
 | **MTTA vazio** | Nenhum incidente foi reconhecido | Use **Acknowledge** em *Monitoring → Problems*. |
 | Erro de **CSP** no console do navegador | Script de terceiro injetado (ex.: Cloudflare Web Analytics) | Desative o recurso na Cloudflare ou libere o domínio no `Content-Security-Policy`. |
+| **Login em loop** (volta sempre para a tela de login) | Cloudflare em modo *Flexible* ou `OIDCRedirectURI` diferente do cadastrado no provedor | Cloudflare em **Full (strict)**; o redirect URI precisa ser idêntico nos dois lados. |
+| **401 / Unauthorized** depois de entrar | E-mail fora da lista | Acrescente `Require claim email:...` em `/etc/apache2/noc-oidc.conf` (e em *Test users*, no Google) e `sudo systemctl reload apache2`. |
 | **Não consigo entrar por SSH** | Meu IP foi bloqueado pelo fail2ban | Pelo console web do provedor ou por outro IP: `sudo fail2ban-client set sshd unbanip MEU.IP`. Coloque o IP em `ignoreip` no `/etc/fail2ban/jail.local`. |
 
 ---
@@ -180,3 +192,62 @@ grep -E '^(ServerActive|Hostname)=' /etc/zabbix/zabbix_agent*.conf
 | Mensal | `sudo fail2ban-client status sshd` e `sudo apt update && sudo apt list --upgradable` |
 | Antes do vencimento | Rotação do token da API (seção 3) |
 | Após qualquer incidente relevante | Escrever um postmortem em [`docs/postmortems/`](postmortems/) |
+
+---
+
+## 8. Login OIDC
+
+O login fica no Apache (`mod_auth_openidc`). O backend não sabe nada sobre usuários.
+
+### Liberar ou remover uma pessoa
+
+1. Edite `/etc/apache2/noc-oidc.conf` e acrescente (ou apague) a linha `Require claim email:pessoa@exemplo.com` — e-mail em minúsculas.
+2. Com Google em modo *Testing*: adicione (ou remova) o e-mail em **Google Auth Platform → Audience → Test users**.
+3. `sudo apache2ctl configtest && sudo systemctl reload apache2`
+
+### Trocar o segredo do client
+
+1. No provedor, gere um novo *client secret*.
+2. Atualize `OIDCClientSecret` em `/etc/apache2/noc-oidc.conf` e rode `sudo systemctl reload apache2`.
+3. Revogue o segredo antigo no provedor.
+
+### Desligar o login em emergência (painel volta a ficar aberto)
+
+```bash
+sudo sed -i 's#^\s*Include /etc/apache2/noc-oidc.conf##' /etc/apache2/sites-available/infra-map-ssl.conf
+sudo systemctl reload apache2
+```
+
+Para religar, recoloque `Include /etc/apache2/noc-oidc.conf` antes do `</VirtualHost>` do vhost 443.
+
+### Nome no cabeçalho, "Sair" e página de acesso negado
+
+O `noc-oidc.conf` precisa destas linhas (já estão no modelo [`deploy/apache-noc-oidc.conf`](../deploy/apache-noc-oidc.conf)):
+
+```apache
+OIDCClaimPrefix "OIDC-Claim-"
+OIDCPassClaimsAs headers
+OIDCAuthRequestParams prompt=select_account
+
+# depois do <Location />:
+<Location /public/>
+    AuthType None
+    Require all granted
+</Location>
+<Location /favicon.svg>
+    AuthType None
+    Require all granted
+</Location>
+ErrorDocument 401 /public/acesso-negado.html
+ErrorDocument 403 /public/acesso-negado.html
+```
+
+- `/api/me` devolve o e-mail e o nome repassados pelo Apache; sem login configurado, responde `{"authenticated": false}` e o painel não mostra o nome.
+- **Sair** encerra a sessão e leva para `/public/saiu.html`.
+- `prompt=select_account` faz o Google mostrar o seletor de contas — é o que permite "Entrar com outra conta".
+
+### Requisitos que não podem faltar
+
+- **HTTPS de ponta a ponta:** certificado de origem no Apache e Cloudflare em **Full (strict)**. Em *Flexible*, o login entra em loop.
+- **Porta 80 só redireciona** para HTTPS. Se ela servir o painel, vira um caminho sem login.
+- O `OIDCCryptoPassphrase` é a chave das sessões: se trocar, todos precisam entrar de novo.

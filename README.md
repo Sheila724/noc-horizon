@@ -78,6 +78,7 @@ O objetivo é dar, em poucos segundos, uma leitura visual e intuitiva do estado 
 - 📰 **Ticker contínuo** no rodapé com os problemas ativos e o status operacional de cada local
 - 🔄 **Atualização automática** via polling configurável
 - ⚡ **Cache no backend** — vários navegadores abertos não multiplicam as consultas ao Zabbix
+- 🔐 **Login com OIDC** no Apache (`mod_auth_openidc`): Google, Keycloak, Azure AD ou qualquer provedor OpenID Connect, sem alterar o código
 - 📈 **Confiabilidade (SLO)** — disponibilidade de 7 e 30 dias por local, orçamento de erro, MTTR e MTTA, calculados a partir do histórico de eventos do Zabbix
 - 📍 **Locais automáticos pelo inventário do Zabbix** — cadastre latitude/longitude no host e ele aparece no globo, sem editar código
 - 🌐 **Frontend sem build e sem CDN** — HTML, CSS e JS puros, com as bibliotecas servidas localmente
@@ -131,7 +132,7 @@ noc-horizon/
 ├── docker-compose.yml      # Sobe frontend + backend (modo demo por padrão)
 ├── .env.example            # Variáveis do compose (modo, Zabbix, porta)
 ├── docker/web/             # Imagem do frontend: Nginx sem root + CSP
-├── deploy/                 # Modelos de produção: systemd, Apache e script de atualização
+├── deploy/                 # Modelos de produção: systemd, Apache, login OIDC e script de atualização
 ├── docs/
 │   ├── operacao.md         # Runbook: deploy, segredos, saúde e solução de problemas
 │   └── postmortems/        # Análises de incidentes (formato blameless)
@@ -146,6 +147,7 @@ noc-horizon/
 │   └── vendor/             # d3.min.js e topojson-client.min.js (servidos localmente)
 ├── data/
 │   └── countries-110m.json # Mapa-múndi (world-atlas)
+├── public/                 # Páginas públicas do login: acesso negado e "você saiu"
 └── backend/
     ├── app.py              # Rotas HTTP (/api/locations, /health) + cache
     ├── aggregator.py       # Status por host/local e resumo (função pura, testável)
@@ -328,6 +330,29 @@ Recomenda-se publicar o painel com **HTTPS** (Let's Encrypt ou certificado de or
 
 ---
 
+## 🔐 Login (OIDC)
+
+O controle de acesso fica no **Apache**, com o módulo [`mod_auth_openidc`](https://github.com/OpenIDC/mod_auth_openidc) — o código do painel não muda. Quem não tem sessão vai para a tela de login do provedor; quem não está autorizado recebe `401`.
+
+```
+Navegador ──► Apache + mod_auth_openidc ──► painel e /api/
+                   │ sem sessão
+                   ▼
+           Provedor OIDC (Google, Keycloak, Azure AD...)
+```
+
+1. Crie um *client* OIDC no provedor com o redirect `https://SEU-DOMINIO/oidc/callback`.
+2. `apt install libapache2-mod-auth-openidc && a2enmod auth_openidc`
+3. Copie [`deploy/apache-noc-oidc.conf`](deploy/apache-noc-oidc.conf) para `/etc/apache2/noc-oidc.conf` (permissão `600`), preencha *client id*, *secret*, domínio e a lista de e-mails autorizados.
+4. Inclua no vhost **443**: `Include /etc/apache2/noc-oidc.conf`.
+5. Faça a porta **80 só redirecionar** para HTTPS — senão ela vira um caminho sem login.
+
+Depois do login, o painel mostra o nome de quem entrou no cabeçalho (com o link **Sair**) e uma mensagem de boas-vindas. Quem não está autorizado vê uma página própria com o botão **Entrar com outra conta** — ambas em `public/`, liberadas sem login.
+
+Trocar de provedor (ex.: Google → Keycloak) é mudar três linhas: `OIDCProviderMetadataURL`, `OIDCClientID` e `OIDCClientSecret`. O passo a passo completo está no [runbook](docs/operacao.md#8-login-oidc).
+
+---
+
 ## 📈 Confiabilidade: SLO, orçamento de erro, MTTR e MTTA
 
 O painel lateral mostra a confiabilidade dos **últimos 7 dias** e o modal de cada local mostra 7 e 30 dias (endpoint `GET /api/sla`). O histórico vem do próprio Zabbix (`event.get`) — o NOC Horizon não mantém banco de dados.
@@ -369,13 +394,14 @@ O **Dependabot** abre PRs semanais com atualizações de dependências Python e 
 - Frontend sem dependências externas, protegido por Content Security Policy.
 - Segredos barrados antes do commit (pre-commit + gitleaks) e verificados de novo no CI.
 - 📄 Incidentes viram aprendizado: veja o [postmortem do token exposto](docs/postmortems/2026-09-27-token-zabbix-exposto.md).
-- ⚠️ O painel ainda **não possui autenticação**: qualquer pessoa com a URL vê nomes de hosts e problemas ativos. Veja o roadmap.
+- Acesso protegido por **login OIDC** no Apache; sem sessão válida, a página redireciona para o login e a API responde `401`.
 
 ---
 
 ## 🗺️ Roadmap
 
-- [ ] Autenticação/controle de acesso ao painel (ex.: OIDC/Keycloak no Apache)
+- [x] Autenticação/controle de acesso ao painel (OIDC no Apache)
+- [ ] Papéis (RBAC): `noc-viewer` (só ver) e `noc-operator` (reconhecer problemas pelo painel)
 - [ ] Suporte a múltiplos provedores de monitoramento além do Zabbix
 - [ ] Histórico de disponibilidade (uptime) por localização
 

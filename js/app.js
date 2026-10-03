@@ -152,6 +152,42 @@ function sessionExpired(res) {
   window.location.reload();
   return true;
 }
+// Quem está logado (login OIDC no Apache). Sem login configurado, não mostra nada.
+async function fetchMe() {
+  try {
+    const res = await fetch(CONFIG.ME_URL, { cache: "no-store" });
+    if (sessionExpired(res) || !res.ok) return;
+    const me = await res.json();
+    if (!me.authenticated) return;
+
+    document.getElementById("user-name").textContent = me.name;
+    document.getElementById("user-name").title = me.email;
+    const target = window.location.origin + CONFIG.LOGOUT_TO;
+    document.getElementById("logout-link").href =
+      "/oidc/callback?logout=" + encodeURIComponent(target);
+    document.getElementById("user-chip").hidden = false;
+    showWelcome(me.name.split(" ")[0]);
+  } catch (e) {
+    console.warn("Usuário indisponível:", e.message);
+  }
+}
+function showWelcome(firstName) {
+  // Uma vez por sessão do navegador (a aba de uma TV não fica repetindo)
+  try {
+    if (sessionStorage.getItem("noc-welcomed")) return;
+    sessionStorage.setItem("noc-welcomed", "1");
+  } catch (e) {
+    /* sem sessionStorage: mostra mesmo assim */
+  }
+  const toast = document.getElementById("welcome-toast");
+  toast.textContent = `Olá, ${firstName} — boas-vindas ao NOC Horizon 👋`;
+  toast.hidden = false;
+  requestAnimationFrame(() => toast.classList.add("show"));
+  setTimeout(() => {
+    toast.classList.remove("show");
+    setTimeout(() => { toast.hidden = true; }, 600);
+  }, 4000);
+}
 let lastSla = null;
 function formatPct(value) {
   return value == null ? "—" : `${value.toFixed(2)}%`;
@@ -239,6 +275,7 @@ setInterval(updateLiveClock, 1000);
 
 document.getElementById("modal-close-btn").addEventListener("click", closeModal);
 InfraMap.setup(() => {
+  fetchMe();
   fetchStatus();
   fetchSla();
   setInterval(fetchStatus, CONFIG.POLL_INTERVAL_MS);

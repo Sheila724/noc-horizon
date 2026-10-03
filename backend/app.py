@@ -6,7 +6,7 @@ Roda via gunicorn (ver README). Não chame app.run() em produção.
 
 import time
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 
 from aggregator import build_snapshot
 from config import NOC_MODE
@@ -51,6 +51,28 @@ def api_sla():
     except Exception:
         app.logger.exception("falha ao calcular a confiabilidade")
         return jsonify({"ok": False, "erro": "falha ao consultar o histórico"}), 502
+
+
+def _claim(name):
+    """
+    Claim do login OIDC repassado pelo Apache (mod_auth_openidc, OIDCClaimPrefix
+    "OIDC-Claim-"). O Apache apaga esses cabeçalhos se vierem do navegador, e o
+    backend só escuta em 127.0.0.1 — então só o Apache consegue defini-los.
+    """
+    value = request.headers.get(f"OIDC-Claim-{name}", "").strip()
+    try:  # cabeçalhos HTTP chegam como latin-1; nomes como "João" vêm em UTF-8
+        value = value.encode("latin-1").decode("utf-8")
+    except (UnicodeEncodeError, UnicodeDecodeError):
+        pass
+    return value
+
+
+@app.route("/api/me", methods=["GET"])
+def api_me():
+    email = _claim("email")
+    if not email:  # sem login configurado (demo, desenvolvimento)
+        return jsonify({"authenticated": False}), 200
+    return jsonify({"authenticated": True, "email": email, "name": _claim("name") or email}), 200
 
 
 @app.route("/health", methods=["GET"])
