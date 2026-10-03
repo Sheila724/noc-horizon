@@ -542,6 +542,9 @@ svg:active { cursor: grabbing; }
   background: rgba(255, 255, 255, 0.04);
   color: var(--text);
   font-size: 12px;
+  /* o #header deixa os cliques passarem para o globo (pointer-events: none);
+     o selo do usuário precisa recebê-los para o link "Sair" funcionar */
+  pointer-events: auto;
 }
 #user-chip[hidden] { display: none; }
 #user-chip .user-dot {
