@@ -82,6 +82,7 @@ O objetivo é dar, em poucos segundos, uma leitura visual e intuitiva do estado 
 - 📈 **Confiabilidade (SLO)** — disponibilidade de 7 e 30 dias por local, orçamento de erro, MTTR e MTTA, calculados a partir do histórico de eventos do Zabbix
 - 📍 **Locais automáticos pelo inventário do Zabbix** — cadastre latitude/longitude no host e ele aparece no globo, sem editar código
 - 🌐 **Frontend sem build e sem CDN** — HTML, CSS e JS puros, com as bibliotecas servidas localmente
+- 🐾 **Pet do NOC** — uma telinha com olhos que anda no rodapé do painel e reage à operação (assusta no crítico, comemora quando volta tudo verde, cochila quando está calmo). Também alimenta o [Pestinha](https://github.com/Sheila724/pestinha) no computador, pelo `GET /api/pet`
 
 ---
 
@@ -139,17 +140,20 @@ noc-horizon/
 ├── index.html              # Estrutura da página (header, cards, globo, ticker, modal)
 ├── favicon.svg
 ├── css/
-│   └── style.css           # Estilos visuais (tema dark, glassmorphism, animações)
+│   ├── style.css           # Estilos visuais (tema dark, glassmorphism, animações)
+│   └── pet.css             # Pet do NOC (expressões, balão, animações)
 ├── js/
 │   ├── config.js           # Configurações (URL da API, polling, cores/labels de status)
 │   ├── map.js              # Renderização do globo e dos nós geográficos com D3.js
 │   ├── app.js              # Orquestração: busca de dados, cards, ticker e modal
+│   ├── pet.js              # Pet do NOC: reage aos dados que o app.js já buscou
 │   └── vendor/             # d3.min.js e topojson-client.min.js (servidos localmente)
 ├── data/
 │   └── countries-110m.json # Mapa-múndi (world-atlas)
 ├── public/                 # Páginas públicas do login: acesso negado e "você saiu"
 └── backend/
-    ├── app.py              # Rotas HTTP (/api/locations, /health) + cache
+    ├── app.py              # Rotas HTTP (/api/locations, /api/pet, /health) + cache
+    ├── pet_status.py       # Resumo leve para o pet no computador (função pura)
     ├── aggregator.py       # Status por host/local e resumo (função pura, testável)
     ├── zabbix_client.py    # Cliente da API JSON-RPC do Zabbix
     ├── demo_source.py      # Dados simulados para o modo demo
@@ -211,6 +215,7 @@ Todas as variáveis:
 | `NOC_STALE_AFTER_SECONDS` | `600` | Sem dados por mais que isso → host fica **Sem dados** |
 | `NOC_SLO_TARGET` | `99.5` | Meta de disponibilidade (%) |
 | `NOC_SLO_MIN_SEVERITY` | `4` | Severidade mínima que conta como indisponibilidade (4 = *High*) |
+| `NOC_PET_TOKEN` | — | Token do pet de tela no computador (`GET /api/pet`). Vazio = endpoint desligado |
 | `NOC_PORT` | `8080` | Porta local do painel no `docker compose` |
 
 Em produção, esses valores ficam em um arquivo fora do projeto (ex.: `/etc/noc-horizon/env`, com permissão `640`), carregado pelo systemd.
@@ -311,6 +316,32 @@ PrivateTmp=true
 O passo a passo completo de operação — deploy, rotação de token, verificação de saúde e solução de problemas — está no **[runbook de operação](docs/operacao.md)**. Os arquivos de produção ficam em [`deploy/`](deploy/).
 
 Recomenda-se publicar o painel com **HTTPS** (Let's Encrypt ou certificado de origem da Cloudflare).
+
+---
+
+## 🐾 Pet do NOC
+
+**No painel:** já vem ligado. Ele usa os mesmos dados que o painel acabou de buscar (nenhuma consulta a mais) e reage ao pior local:
+
+| Operação | Pet |
+|---|---|
+| Tudo saudável | Feliz, passeia devagar; depois de 3 min sem mudanças, cochila |
+| Sem dados | Confuso: "cadê os dados de …?" |
+| Atenção / Alerta | Curioso / preocupado, com o nome do local no balão |
+| Crítico | Leva um susto, corre e treme; o balão fica fixo com o local |
+| Voltou ao normal | Pula e solta confete: "Tudo verde de novo!" |
+| API fora do ar | Desmaia até a conexão voltar |
+
+Clicar nele abre os detalhes do pior local. O **×** (ao passar o mouse) esconde o pet; o 🐾 no canto traz de volta (a escolha fica salva no navegador). Com *reduzir movimento* ligado no sistema, ele não anda nem pula.
+
+**No computador (Pestinha):** o app desktop lê `GET /api/pet`, um resumo leve do estado (status geral, pior local, até 5 locais com problema). Como um app desktop não faz o login OIDC do navegador, essa rota fica fora do OIDC e exige um token próprio:
+
+1. Gere o token: `openssl rand -hex 32` e coloque em `NOC_PET_TOKEN` (no `/etc/noc-horizon/env` ou no `.env`). Sem ele, a rota responde `404`.
+2. No Apache, inclua o bloco `<Location /api/pet>` do [`deploy/apache-noc-oidc.conf`](deploy/apache-noc-oidc.conf) e rode `sudo systemctl reload apache2`.
+3. Teste: `curl -H "Authorization: Bearer SEU_TOKEN" https://noc.seu-dominio.com/api/pet`
+4. No Pestinha, preencha o `noc_horizon.json` com a URL e o token (veja o README do Pestinha).
+
+O token só dá acesso a esse resumo (sem hosts de outros locais, sem histórico) e é comparado em tempo constante.
 
 ---
 

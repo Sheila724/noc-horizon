@@ -95,6 +95,16 @@ O grupo do usuário precisa de permissão **Read** nos grupos de hosts exibidos 
 2. No servidor: atualize `ZABBIX_API_TOKEN` em `/etc/noc-horizon/env` e rode `sudo systemctl restart noc-horizon`.
 3. Confira o painel (seção 4) e só então **apague o token antigo** no Zabbix.
 
+### Token do pet de tela (Pestinha)
+
+O Pestinha no computador lê `GET /api/pet` com `Authorization: Bearer <NOC_PET_TOKEN>`. Para criar ou trocar:
+
+1. `openssl rand -hex 32` e grave em `NOC_PET_TOKEN=` no `/etc/noc-horizon/env`; `sudo systemctl restart noc-horizon`.
+2. Confira que o vhost 443 tem o bloco `<Location /api/pet>` do `deploy/apache-noc-oidc.conf` (fora do OIDC) e `sudo systemctl reload apache2`.
+3. Atualize o `noc_horizon.json` de cada Pestinha. Token antigo deixa de valer na hora.
+
+Para desligar o acesso do pet: apague a linha `NOC_PET_TOKEN` e reinicie (a rota passa a responder `404`).
+
 ---
 
 ## 4. Verificação rápida de saúde

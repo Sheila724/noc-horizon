@@ -250,9 +250,11 @@ async function fetchStatus() {
     updateStatsCard(data.summary);
     updateSidePanel(data.summary);
     updateTicker(data.locations);
+    if (window.NocPet) NocPet.update(data.summary, data.locations);
     document.getElementById("last-update").textContent =
       "atualizado às " + new Date().toLocaleTimeString("pt-BR");
   } catch (e) {
+    if (window.NocPet) NocPet.erro();
     document.getElementById("last-update").textContent = "erro ao conectar: " + e.message;
   }
 }

@@ -45,6 +45,10 @@ LOCATIONS = {
 
 PORT = int(os.environ.get("PORT", 5004))
 
+# Token do pet de tela (Pestinha) no computador, que lê GET /api/pet.
+# Vazio = endpoint desligado. Gere com: openssl rand -hex 32
+NOC_PET_TOKEN = os.environ.get("NOC_PET_TOKEN", "").strip()
+
 # Host sem nenhum dado novo há mais que isso aparece como "Sem dados" (unknown).
 STALE_AFTER_SECONDS = int(os.environ.get("NOC_STALE_AFTER_SECONDS", 600))
 
