@@ -1,0 +1,209 @@
+/* Pet do NOC (js/pet.js): uma telinha com olhos que anda no rodapé e reage ao estado da operação. */
+.noc-pet {
+  --pet-cor: var(--ok);
+  position: fixed;
+  left: 0;
+  bottom: 64px;   /* acima da legenda e da assinatura */
+  width: 76px;
+  height: 64px;
+  z-index: 7;
+  pointer-events: none;
+  will-change: transform;
+}
+.noc-pet[hidden] { display: none; }
+.noc-pet[data-nivel="unknown"]   { --pet-cor: var(--unknown); }
+.noc-pet[data-nivel="warning"]   { --pet-cor: var(--warning); }
+.noc-pet[data-nivel="attention"] { --pet-cor: var(--attention); }
+.noc-pet[data-nivel="critical"]  { --pet-cor: var(--critical); }
+.noc-pet[data-nivel="offline"]   { --pet-cor: var(--muted); }
+
+.pet-corpo {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  pointer-events: auto;
+  transform-origin: 50% 100%;
+  transition: transform 0.25s ease;
+}
+.pet-corpo:focus-visible {
+  outline: 2px solid var(--pet-cor);
+  outline-offset: 4px;
+  border-radius: 14px;
+}
+.pet-corpo svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.45));
+}
+
+.pet-moldura {
+  fill: #1b2a4e;
+  stroke: var(--pet-cor);
+  stroke-width: 3;
+  transition: stroke 0.4s ease;
+}
+.pet-tela { fill: #0b1430; }
+.noc-pet[data-nivel="critical"] .pet-tela { animation: pet-alarme 1s ease-in-out infinite; }
+
+.pet-olhos rect { fill: #e6edf7; }
+.pet-olhos path,
+.pet-boca path,
+.pet-pe {
+  fill: none;
+  stroke: #e6edf7;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.pet-pe { stroke: #1b2a4e; stroke-width: 6; }
+.pet-boca ellipse { fill: #e6edf7; }
+.pet-olhos { transition: transform 0.12s linear; }
+.olhos-abertos { animation: pet-piscar 5s infinite; transform-box: fill-box; transform-origin: center; }
+.pet-zz text { fill: var(--muted); font: 700 11px sans-serif; }
+
+/* Cada expressão mostra só os olhos e a boca dela */
+.pet-olhos > g, .pet-boca > *, .pet-zz { display: none; }
+.pet-corpo[data-expr="feliz"] .olhos-abertos,
+.pet-corpo[data-expr="feliz"] .boca-sorriso,
+.pet-corpo[data-expr="carinho"] .olhos-felizes,
+.pet-corpo[data-expr="carinho"] .boca-sorriso,
+.pet-corpo[data-expr="curioso"] .olhos-abertos,
+.pet-corpo[data-expr="curioso"] .boca-reta,
+.pet-corpo[data-expr="preocupado"] .olhos-abertos,
+.pet-corpo[data-expr="preocupado"] .boca-onda,
+.pet-corpo[data-expr="confuso"] .olhos-abertos,
+.pet-corpo[data-expr="confuso"] .boca-onda,
+.pet-corpo[data-expr="assustado"] .olhos-abertos,
+.pet-corpo[data-expr="assustado"] .boca-o,
+.pet-corpo[data-expr="dormindo"] .olhos-fechados,
+.pet-corpo[data-expr="dormindo"] .boca-reta,
+.pet-corpo[data-expr="desmaiado"] .olhos-x,
+.pet-corpo[data-expr="desmaiado"] .boca-onda { display: inline; }
+.pet-corpo[data-expr="dormindo"] .pet-zz { display: inline; animation: pet-zz 2.4s ease-in-out infinite; }
+
+/* Olhos arregalados no susto, tortos quando confuso */
+.pet-corpo[data-expr="assustado"] .olhos-abertos rect { transform: scale(0.85, 1.15); transform-box: fill-box; transform-origin: center; }
+.pet-corpo[data-expr="confuso"] .olhos-abertos rect:last-child { transform: scaleY(0.6); transform-box: fill-box; transform-origin: center; }
+.pet-corpo[data-expr="preocupado"] .olhos-abertos rect { transform: scaleY(0.8); transform-box: fill-box; transform-origin: center; }
+.pet-corpo[data-expr="desmaiado"] { transform-origin: 50% 50%; transform: rotate(-82deg); }
+
+/* Andando: balança de leve e inclina para o lado em que vai */
+.noc-pet.andando .pet-corpo { animation: pet-passo 0.5s ease-in-out infinite; }
+.noc-pet.andando.virado .pet-corpo { animation-name: pet-passo-esq; }
+
+.pet-corpo.pulando  { animation: pet-pulo 0.7s ease-out; }
+.pet-corpo.pulinho  { animation: pet-pulinho 0.5s ease-out; }
+.pet-corpo.susto    { animation: pet-susto 0.9s ease-out; }
+.noc-pet[data-nivel="critical"]:not(.andando) .pet-corpo { animation: pet-tremer 0.35s linear infinite; }
+
+/* Balão de fala */
+.pet-balao {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 0;
+  width: max-content;
+  max-width: 240px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--pet-cor);
+  background: rgba(10, 17, 40, 0.94);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.35;
+  pointer-events: none;
+  z-index: 2;
+}
+.pet-balao[hidden] { display: none; }
+.pet-balao::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 26px;
+  border: 7px solid transparent;
+  border-top-color: var(--pet-cor);
+}
+.noc-pet.balao-esquerda .pet-balao { left: auto; right: 0; }
+.noc-pet.balao-esquerda .pet-balao::after { left: auto; right: 26px; }
+
+/* Botão de esconder (aparece ao passar o mouse) e o de mostrar de volta */
+.pet-fechar {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid #2a4a8f;
+  background: var(--bg-mid);
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  pointer-events: auto;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.noc-pet:hover .pet-fechar,
+.pet-fechar:focus-visible { opacity: 1; }
+#noc-pet-reabrir {
+  position: fixed;
+  right: 16px;
+  bottom: 64px;
+  z-index: 7;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid #2a4a8f;
+  background: rgba(10, 17, 40, 0.85);
+  font-size: 15px;
+  cursor: pointer;
+  opacity: 0.6;
+}
+#noc-pet-reabrir:hover { opacity: 1; }
+#noc-pet-reabrir[hidden] { display: none; }
+
+/* Confete da comemoração */
+.pet-confete {
+  position: absolute;
+  top: 10px;
+  width: 6px;
+  height: 9px;
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 1;
+  animation: pet-confete 1.4s ease-out forwards;
+}
+.pet-confete.c0 { background: var(--ok); }
+.pet-confete.c1 { background: var(--warning); }
+.pet-confete.c2 { background: #4d9cff; }
+.pet-confete.c3 { background: #e06bff; }
+
+@keyframes pet-piscar { 0%, 94%, 100% { transform: scaleY(1); } 97% { transform: scaleY(0.1); } }
+@keyframes pet-passo { 0%, 100% { transform: translateY(0) rotate(3deg); } 50% { transform: translateY(-3px) rotate(3deg); } }
+@keyframes pet-passo-esq { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-3px) rotate(-3deg); } }
+@keyframes pet-pulo { 0% { transform: translateY(0); } 40% { transform: translateY(-34px) scale(1.05, 0.95); } 70% { transform: translateY(0) scale(1.08, 0.9); } 100% { transform: none; } }
+@keyframes pet-pulinho { 0%, 100% { transform: none; } 45% { transform: translateY(-12px); } }
+@keyframes pet-susto { 0% { transform: none; } 20% { transform: translateY(-26px) scale(0.9, 1.15); } 45% { transform: translateY(0); } 55%, 75% { transform: translateX(-4px); } 65%, 85% { transform: translateX(4px); } 100% { transform: none; } }
+@keyframes pet-tremer { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-1.5px); } 75% { transform: translateX(1.5px); } }
+@keyframes pet-alarme { 0%, 100% { fill: #0b1430; } 50% { fill: #3a0d1a; } }
+@keyframes pet-zz { 0%, 100% { opacity: 0.3; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-4px); } }
+@keyframes pet-confete {
+  0% { transform: translate(0, 0) rotate(0); opacity: 1; }
+  100% { transform: translate(var(--dx, 0), -70px) rotate(320deg); opacity: 0; }
+}
+
+@media (max-width: 600px) {
+  .noc-pet { width: 56px; height: 47px; bottom: 136px; }   /* acima do cartão de números */
+  .pet-balao { max-width: 180px; font-size: 11px; }
+  #noc-pet-reabrir { bottom: 136px; right: 10px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pet-corpo, .pet-corpo *, .noc-pet .pet-corpo { animation: none !important; transition: none !important; }
+}

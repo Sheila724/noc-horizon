@@ -28,6 +28,7 @@ services:
       NOC_HOST_TAG: ${NOC_HOST_TAG:-}
       NOC_SLO_TARGET: ${NOC_SLO_TARGET:-99.5}
       NOC_SLO_MIN_SEVERITY: ${NOC_SLO_MIN_SEVERITY:-4}
+      NOC_PET_TOKEN: ${NOC_PET_TOKEN:-}
 
   web:
     <<: *hardening
